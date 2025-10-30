@@ -7,7 +7,7 @@ module.exports = function (api) {
         'module-resolver',
         {
           alias: {
-            '@shared': '../../packages/shared/src',
+            '@cro/shared': '../../packages/shared/src',
           },
         },
       ],
