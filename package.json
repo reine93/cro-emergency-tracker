@@ -1,0 +1,9 @@
+{
+  "name": "cro-emergency-tracker",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm -w apps/mobile run start",
+    "build": "npm -w apps/mobile run build"
+  }
+}
