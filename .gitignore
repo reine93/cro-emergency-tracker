@@ -51,3 +51,4 @@ DerivedData/
 coverage/
 dist/
 tmp/
+apps/api/dist/

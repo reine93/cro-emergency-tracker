@@ -10,6 +10,8 @@
     "paths": {
       "@cro/shared/*": ["packages/shared/src/*"]
     },
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true
+
   }
 }

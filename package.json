@@ -1,9 +1,29 @@
 {
   "name": "cro-emergency-tracker",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "npm -w apps/mobile run start",
-    "build": "npm -w apps/mobile run build"
+    "dev:mobile": "npm -w apps/mobile run start",
+    "dev:api": "npm -w apps/api run dev",
+    "test:api": "npm -w apps/api run test",
+    "typecheck:api": "npm -w apps/api run typecheck",
+    "dev": "npm run dev:mobile",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.7.4"
+  },
+  "dependencies": {
+    "expo": "~54.0.30",
+    "expo-status-bar": "~3.0.9"
   }
 }
