@@ -9,8 +9,8 @@ The app will include features like real-time alerts, safety checklists, and gami
 
 ## 🚧 Project Status
 
-This repository is currently under initial setup and testing with [CodeRabbit](https://coderabbit.ai).  
-App source code and documentation will be added soon.
+This repository is in early development. The monorepo wiring (mobile app + API + shared package) is in place and ready
+for feature work.
 
 ---
 
@@ -32,9 +32,47 @@ App source code and documentation will be added soon.
 
 ---
 
-## ⚙️ Setup (coming soon)
+## ⚙️ Setup
 
-Instructions for installing dependencies and running the app locally will be added here.
+### Prerequisites
+
+- Node.js (LTS recommended)
+- npm
+- For mobile development: Expo Go on your device, or Android Studio / Xcode simulators
+
+### Install
+
+From the repo root:
+
+```bash
+npm install
+```
+
+### Run (Mobile)
+
+```bash
+npm run dev:mobile
+```
+
+Then use the Expo CLI menu to open iOS/Android/Web.
+
+### Run (API)
+
+```bash
+npm run dev:api
+```
+
+Health check:
+
+- `GET http://localhost:8080/health`
+
+### Lint / Typecheck / Tests
+
+```bash
+npm run lint
+npm run typecheck:api
+npm run test:api
+```
 
 ---
 

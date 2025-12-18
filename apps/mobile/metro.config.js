@@ -12,7 +12,7 @@ config.watchFolders = [workspaceRoot];
 // Resolve modules from both the app and the root node_modules
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules')
+  path.resolve(workspaceRoot, 'node_modules'),
 ];
 
 module.exports = config;
