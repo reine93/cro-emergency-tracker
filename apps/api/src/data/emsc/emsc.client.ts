@@ -43,15 +43,15 @@ export async function fetchRecentEarthquakes(
 
   // ---- Build request ----
   const url = new URL(EMSC_BASE_URL);
-  url.searchParams.set('format', 'geojson');
+  url.searchParams.set('format', 'json');
   url.searchParams.set('starttime', params.from.toISOString());
   url.searchParams.set('endtime', params.to.toISOString());
 
   if (params.bbox) {
-    url.searchParams.set('minlat', params.bbox.minLat.toString());
-    url.searchParams.set('maxlat', params.bbox.maxLat.toString());
-    url.searchParams.set('minlon', params.bbox.minLon.toString());
-    url.searchParams.set('maxlon', params.bbox.maxLon.toString());
+    url.searchParams.set('minlatitude', params.bbox.minLat.toString());
+    url.searchParams.set('maxlatitude', params.bbox.maxLat.toString());
+    url.searchParams.set('minlongitude', params.bbox.minLon.toString());
+    url.searchParams.set('maxlongitude', params.bbox.maxLon.toString());
   }
 
   // ---- Fetch ----

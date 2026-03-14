@@ -29,7 +29,7 @@ describe('fetchRecentEarthquakes', () => {
     const [calledUrl, options] = fetchSpy.mock.calls[0];
     const url = new URL(calledUrl as string);
 
-    expect(url.searchParams.get('format')).toBe('geojson');
+    expect(url.searchParams.get('format')).toBe('json');
     expect(url.searchParams.get('starttime')).toBe(from.toISOString());
     expect(url.searchParams.get('endtime')).toBe(to.toISOString());
     expect(options).toMatchObject({
@@ -62,10 +62,10 @@ describe('fetchRecentEarthquakes', () => {
 
     const url = new URL(fetchSpy.mock.calls[0][0] as string);
 
-    expect(url.searchParams.get('minlat')).toBe('40');
-    expect(url.searchParams.get('maxlat')).toBe('50');
-    expect(url.searchParams.get('minlon')).toBe('10');
-    expect(url.searchParams.get('maxlon')).toBe('20');
+    expect(url.searchParams.get('minlatitude')).toBe('40');
+    expect(url.searchParams.get('maxlatitude')).toBe('50');
+    expect(url.searchParams.get('minlongitude')).toBe('10');
+    expect(url.searchParams.get('maxlongitude')).toBe('20');
   });
 
   it('throws when EMSC responds with error', async () => {
