@@ -46,3 +46,57 @@ function isPointInPolygon(latitude: number, longitude: number, polygon: Array<[n
 export function isInsideCroatia(latitude: number, longitude: number): boolean {
   return isPointInPolygon(latitude, longitude, CROATIA_MAINLAND_POLYGON);
 }
+
+function toProjectedKm(latitude: number, longitude: number, referenceLatitude: number) {
+  const latScale = 110.574; // km per degree latitude
+  const lonScale = 111.32 * Math.cos((referenceLatitude * Math.PI) / 180); // km per degree longitude
+  return {
+    x: longitude * lonScale,
+    y: latitude * latScale,
+  };
+}
+
+function pointToSegmentDistanceKm(
+  latitude: number,
+  longitude: number,
+  start: [number, number],
+  end: [number, number],
+) {
+  const referenceLatitude = (latitude + start[1] + end[1]) / 3;
+  const point = toProjectedKm(latitude, longitude, referenceLatitude);
+  const a = toProjectedKm(start[1], start[0], referenceLatitude);
+  const b = toProjectedKm(end[1], end[0], referenceLatitude);
+
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const apx = point.x - a.x;
+  const apy = point.y - a.y;
+
+  const abSquared = abx * abx + aby * aby;
+  if (abSquared === 0) {
+    return Math.hypot(apx, apy);
+  }
+
+  const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / abSquared));
+  const closestX = a.x + t * abx;
+  const closestY = a.y + t * aby;
+
+  return Math.hypot(point.x - closestX, point.y - closestY);
+}
+
+export function distanceToCroatiaKm(latitude: number, longitude: number): number {
+  if (isInsideCroatia(latitude, longitude)) {
+    return 0;
+  }
+
+  let minDistanceKm = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < CROATIA_MAINLAND_POLYGON.length - 1; i += 1) {
+    const start = CROATIA_MAINLAND_POLYGON[i];
+    const end = CROATIA_MAINLAND_POLYGON[i + 1];
+    const segmentDistanceKm = pointToSegmentDistanceKm(latitude, longitude, start, end);
+    minDistanceKm = Math.min(minDistanceKm, segmentDistanceKm);
+  }
+
+  return minDistanceKm;
+}

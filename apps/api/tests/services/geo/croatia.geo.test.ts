@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isInsideCroatia } from '../../../src/services/geo/croatia.geo';
+import { distanceToCroatiaKm, isInsideCroatia } from '../../../src/services/geo/croatia.geo';
 
 describe('isInsideCroatia', () => {
   it('returns true for a known Croatia inland coordinate (Zagreb)', () => {
@@ -12,5 +12,23 @@ describe('isInsideCroatia', () => {
 
   it('returns false for a known outside coordinate east of Croatia (Belgrade)', () => {
     expect(isInsideCroatia(44.7866, 20.4489)).toBe(false);
+  });
+});
+
+describe('distanceToCroatiaKm', () => {
+  it('returns zero for inside-Croatia points', () => {
+    expect(distanceToCroatiaKm(45.815, 15.982)).toBe(0);
+  });
+
+  it('returns a positive distance for nearby outside points', () => {
+    const distance = distanceToCroatiaKm(45.44, 12.33);
+    expect(distance).toBeGreaterThan(30);
+    expect(distance).toBeLessThan(250);
+  });
+
+  it('returns larger distances for farther outside points', () => {
+    const veniceDistance = distanceToCroatiaKm(45.44, 12.33);
+    const belgradeDistance = distanceToCroatiaKm(44.7866, 20.4489);
+    expect(belgradeDistance).toBeGreaterThan(veniceDistance);
   });
 });
