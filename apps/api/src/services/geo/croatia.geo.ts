@@ -53,8 +53,7 @@ function isPointInPolygon(latitude: number, longitude: number, polygon: Position
     const yj = polygon[j][1];
 
     const intersects =
-      yi > latitude !== yj > latitude &&
-      longitude < ((xj - xi) * (latitude - yi)) / (yj - yi) + xi;
+      yi > latitude !== yj > latitude && longitude < ((xj - xi) * (latitude - yi)) / (yj - yi) + xi;
     if (intersects) {
       inside = !inside;
     }

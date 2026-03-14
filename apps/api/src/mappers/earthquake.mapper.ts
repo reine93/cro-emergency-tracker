@@ -1,5 +1,5 @@
 import type { EmscFeature } from '../data/emsc/emsc.types';
-import type { EarthquakeEvent } from '../domain/earthquake.types';
+import type { EarthquakeEvent } from '@cro/shared';
 
 export function mapEmscToEarthquake(feature: EmscFeature): EarthquakeEvent {
   const props = feature.properties;

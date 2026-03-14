@@ -15,5 +15,14 @@ export type EarthquakeEvent = {
   longitude: number;
 
   place: string; // flynn_region
-  authority?: string; // auth (optional, nice for debugging)
+  authority?: string; // auth
+};
+
+export type RecentEarthquakesQuery = {
+  hours?: number;
+  minMag?: number;
+};
+
+export type RecentEarthquakesResponse = {
+  items: EarthquakeEvent[];
 };

@@ -1,6 +1,6 @@
 import { fetchRecentEarthquakes } from '../data/emsc/emsc.client';
 import type { EmscFeature, EmscFeatureCollection } from '../data/emsc/emsc.types';
-import type { EarthquakeEvent } from '../domain/earthquake.types';
+import type { EarthquakeEvent, RecentEarthquakesQuery } from '@cro/shared';
 import { mapEmscToEarthquake } from '../mappers/earthquake.mapper';
 import { distanceToCroatiaKm, isInsideCroatia } from './geo/croatia.geo';
 
@@ -16,11 +16,6 @@ export const CROATIA_QUERY_BBOX: BBox = {
   maxLat: 47.2,
   minLon: 12.5,
   maxLon: 20.5,
-};
-
-export type GetRecentEarthquakesParams = {
-  hours?: number;
-  minMag?: number;
 };
 
 type EarthquakeServiceDeps = {
@@ -46,7 +41,7 @@ export function minimumMagnitudeForDistanceKm(distanceKm: number, baseMinMag: nu
 }
 
 export async function getRecentEarthquakes(
-  params: GetRecentEarthquakesParams = {},
+  params: RecentEarthquakesQuery = {},
   deps: EarthquakeServiceDeps = defaultDeps,
 ): Promise<EarthquakeEvent[]> {
   const hours = params.hours ?? 24;

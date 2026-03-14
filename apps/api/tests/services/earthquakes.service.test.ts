@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { EmscFeature } from '../../src/data/emsc/emsc.types';
-import type { EarthquakeEvent } from '../../src/domain/earthquake.types';
+import type { EarthquakeEvent } from '@cro/shared';
 import {
   CROATIA_QUERY_BBOX,
   getRecentEarthquakes,

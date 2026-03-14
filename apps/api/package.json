@@ -15,6 +15,7 @@
     "lint:fix": "eslint src tests --fix"
   },
   "dependencies": {
+    "@cro/shared": "*",
     "cors": "^2.8.5",
     "express": "^4.19.2"
   },

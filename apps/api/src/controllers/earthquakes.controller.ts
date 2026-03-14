@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { RecentEarthquakesResponse } from '@cro/shared';
 import { getRecentEarthquakes } from '../services/earthquakes.service';
 
 function parsePositiveNumber(value: unknown): number | undefined {
@@ -32,7 +33,8 @@ export async function getRecentEarthquakesHandler(req: Request, res: Response) {
 
   try {
     const items = await getRecentEarthquakes({ hours, minMag });
-    return res.status(200).json({ items });
+    const payload: RecentEarthquakesResponse = { items };
+    return res.status(200).json(payload);
   } catch {
     return res.status(502).json({ message: 'Failed to fetch earthquake data' });
   }
