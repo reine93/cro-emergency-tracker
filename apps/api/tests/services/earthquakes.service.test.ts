@@ -74,8 +74,8 @@ describe('getRecentEarthquakes', () => {
         source: 'EMSC',
         time: '2026-01-01T04:00:00Z',
         magnitude: 1.0,
-        latitude: 43.9,
-        longitude: 15.4,
+        latitude: 45.8,
+        longitude: 16.0,
         place: 'CROATIA',
       },
     };
