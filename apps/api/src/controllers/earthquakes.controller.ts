@@ -30,6 +30,10 @@ export async function getRecentEarthquakesHandler(req: Request, res: Response) {
     return res.status(400).json({ message: '"minMag" must be a non-negative number' });
   }
 
-  const items = await getRecentEarthquakes({ hours, minMag });
-  return res.status(200).json({ items });
+  try {
+    const items = await getRecentEarthquakes({ hours, minMag });
+    return res.status(200).json({ items });
+  } catch {
+    return res.status(502).json({ message: 'Failed to fetch earthquake data' });
+  }
 }

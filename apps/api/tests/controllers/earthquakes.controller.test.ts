@@ -62,6 +62,22 @@ describe('getRecentEarthquakesHandler', () => {
     });
     expect(getRecentEarthquakes).not.toHaveBeenCalled();
   });
+
+  it('returns 502 when service throws', async () => {
+    vi.mocked(getRecentEarthquakes).mockRejectedValueOnce(new Error('upstream failed'));
+
+    const req = {
+      query: { hours: '24', minMag: '2.5' },
+    } as unknown as Request;
+    const res = createResponseMock();
+
+    await getRecentEarthquakesHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(502);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Failed to fetch earthquake data',
+    });
+  });
 });
 
 describe('earthquakes route registration', () => {
