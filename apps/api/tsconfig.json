@@ -6,6 +6,7 @@
     "module": "CommonJS",
     "target": "ES2020",
     "moduleResolution": "Node",
+    "resolveJsonModule": true,
     "noEmit": false,
     "types": ["node"],
     "esModuleInterop": true,

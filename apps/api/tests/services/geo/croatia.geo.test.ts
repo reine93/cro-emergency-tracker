@@ -13,6 +13,10 @@ describe('isInsideCroatia', () => {
   it('returns false for a known outside coordinate east of Croatia (Belgrade)', () => {
     expect(isInsideCroatia(44.7866, 20.4489)).toBe(false);
   });
+
+  it('returns false for a Slovenia-border coordinate that should not be in Croatia', () => {
+    expect(isInsideCroatia(45.9, 15.09)).toBe(false);
+  });
 });
 
 describe('distanceToCroatiaKm', () => {
@@ -28,7 +32,7 @@ describe('distanceToCroatiaKm', () => {
 
   it('returns larger distances for farther outside points', () => {
     const veniceDistance = distanceToCroatiaKm(45.44, 12.33);
-    const belgradeDistance = distanceToCroatiaKm(44.7866, 20.4489);
-    expect(belgradeDistance).toBeGreaterThan(veniceDistance);
+    const berlinDistance = distanceToCroatiaKm(52.52, 13.405);
+    expect(berlinDistance).toBeGreaterThan(veniceDistance);
   });
 });

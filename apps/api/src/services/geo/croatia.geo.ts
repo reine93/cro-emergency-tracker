@@ -1,30 +1,50 @@
-const CROATIA_MAINLAND_POLYGON: Array<[number, number]> = [
-  [13.48, 45.55],
-  [13.63, 45.06],
-  [14.25, 44.85],
-  [14.8, 44.4],
-  [15.35, 44.1],
-  [15.8, 43.7],
-  [16.45, 43.3],
-  [17.3, 42.95],
-  [18.3, 42.65],
-  [18.95, 42.49],
-  [18.85, 43.2],
-  [18.2, 43.5],
-  [17.7, 43.7],
-  [17.4, 44.0],
-  [17.5, 44.9],
-  [18.4, 45.1],
-  [19.0, 45.5],
-  [18.9, 45.95],
-  [18.3, 46.25],
-  [16.7, 46.55],
-  [15.2, 46.5],
-  [14.2, 46.25],
-  [13.48, 45.55],
-];
+import croatiaBoundary from './croatia.boundary.json';
 
-function isPointInPolygon(latitude: number, longitude: number, polygon: Array<[number, number]>) {
+type Position = [number, number];
+
+function asPositionArray(input: unknown): Position[] {
+  if (!Array.isArray(input)) return [];
+  return input.filter(
+    (value): value is Position =>
+      Array.isArray(value) &&
+      value.length >= 2 &&
+      typeof value[0] === 'number' &&
+      typeof value[1] === 'number',
+  );
+}
+
+function extractBoundaryRings(): Position[][] {
+  const feature = croatiaBoundary.features[0];
+  if (!feature || !feature.geometry) {
+    throw new Error('Invalid Croatia boundary GeoJSON: missing feature geometry');
+  }
+
+  if (feature.geometry.type === 'Polygon') {
+    const outerRing = asPositionArray(feature.geometry.coordinates[0]);
+    if (outerRing.length < 4) {
+      throw new Error('Invalid Croatia boundary GeoJSON: polygon ring is missing or too short');
+    }
+    return [outerRing];
+  }
+
+  if (feature.geometry.type === 'MultiPolygon') {
+    const rings = feature.geometry.coordinates
+      .map((polygon) => asPositionArray(polygon[0]))
+      .filter((ring) => ring.length >= 4);
+
+    if (rings.length === 0) {
+      throw new Error('Invalid Croatia boundary GeoJSON: multipolygon has no valid rings');
+    }
+
+    return rings;
+  }
+
+  throw new Error('Invalid Croatia boundary GeoJSON: expected Polygon or MultiPolygon');
+}
+
+const CROATIA_BOUNDARY_RINGS = extractBoundaryRings();
+
+function isPointInPolygon(latitude: number, longitude: number, polygon: Position[]) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const xi = polygon[i][0];
@@ -44,7 +64,7 @@ function isPointInPolygon(latitude: number, longitude: number, polygon: Array<[n
 }
 
 export function isInsideCroatia(latitude: number, longitude: number): boolean {
-  return isPointInPolygon(latitude, longitude, CROATIA_MAINLAND_POLYGON);
+  return CROATIA_BOUNDARY_RINGS.some((ring) => isPointInPolygon(latitude, longitude, ring));
 }
 
 function toProjectedKm(latitude: number, longitude: number, referenceLatitude: number) {
@@ -60,7 +80,7 @@ function pointToSegmentDistanceKm(
   latitude: number,
   longitude: number,
   start: [number, number],
-  end: [number, number],
+  end: Position,
 ) {
   const referenceLatitude = (latitude + start[1] + end[1]) / 3;
   const point = toProjectedKm(latitude, longitude, referenceLatitude);
@@ -91,11 +111,13 @@ export function distanceToCroatiaKm(latitude: number, longitude: number): number
 
   let minDistanceKm = Number.POSITIVE_INFINITY;
 
-  for (let i = 0; i < CROATIA_MAINLAND_POLYGON.length - 1; i += 1) {
-    const start = CROATIA_MAINLAND_POLYGON[i];
-    const end = CROATIA_MAINLAND_POLYGON[i + 1];
-    const segmentDistanceKm = pointToSegmentDistanceKm(latitude, longitude, start, end);
-    minDistanceKm = Math.min(minDistanceKm, segmentDistanceKm);
+  for (const ring of CROATIA_BOUNDARY_RINGS) {
+    for (let i = 0; i < ring.length - 1; i += 1) {
+      const start = ring[i];
+      const end = ring[i + 1];
+      const segmentDistanceKm = pointToSegmentDistanceKm(latitude, longitude, start, end);
+      minDistanceKm = Math.min(minDistanceKm, segmentDistanceKm);
+    }
   }
 
   return minDistanceKm;
