@@ -4,6 +4,7 @@ import type { EarthquakeEvent } from '../../src/domain/earthquake.types';
 import {
   CROATIA_QUERY_BBOX,
   getRecentEarthquakes,
+  minimumMagnitudeForDistanceKm,
 } from '../../src/services/earthquakes.service';
 
 function makeFeature(id: string): EmscFeature {
@@ -39,6 +40,7 @@ describe('getRecentEarthquakes', () => {
       makeFeature('outside-low'),
       makeFeature('outside-high'),
       makeFeature('inside-new'),
+      makeFeature('outside-far-big'),
     ];
 
     const byId: Record<string, EarthquakeEvent> = {
@@ -56,17 +58,17 @@ describe('getRecentEarthquakes', () => {
         source: 'EMSC',
         time: '2026-01-01T02:00:00Z',
         magnitude: 1.9,
-        latitude: 48.0,
-        longitude: 21.0,
+        latitude: 45.95,
+        longitude: 13.05,
         place: 'OUTSIDE',
       },
       'outside-high': {
         id: 'outside-high',
         source: 'EMSC',
         time: '2026-01-01T03:00:00Z',
-        magnitude: 3.8,
-        latitude: 48.1,
-        longitude: 21.1,
+        magnitude: 3.0,
+        latitude: 45.9,
+        longitude: 13.0,
         place: 'OUTSIDE',
       },
       'inside-new': {
@@ -77,6 +79,15 @@ describe('getRecentEarthquakes', () => {
         latitude: 45.8,
         longitude: 16.0,
         place: 'CROATIA',
+      },
+      'outside-far-big': {
+        id: 'outside-far-big',
+        source: 'EMSC',
+        time: '2026-01-01T05:00:00Z',
+        magnitude: 7.5,
+        latitude: 50.0,
+        longitude: 10.0,
+        place: 'FAR OUTSIDE',
       },
     };
 
@@ -115,5 +126,13 @@ describe('getRecentEarthquakes', () => {
     await expect(getRecentEarthquakes({ hours: 0 }, deps)).rejects.toThrow('"hours"');
     await expect(getRecentEarthquakes({ minMag: -1 }, deps)).rejects.toThrow('"minMag"');
     expect(deps.fetchRecentEarthquakes).not.toHaveBeenCalled();
+  });
+
+  it('applies distance-based dynamic thresholds for cross-border events', () => {
+    expect(minimumMagnitudeForDistanceKm(10, 2.5)).toBe(2.5);
+    expect(minimumMagnitudeForDistanceKm(80, 2.5)).toBe(2.9);
+    expect(minimumMagnitudeForDistanceKm(180, 2.5)).toBe(3.4);
+    expect(minimumMagnitudeForDistanceKm(260, 2.5)).toBe(3.9);
+    expect(minimumMagnitudeForDistanceKm(350, 2.5)).toBe(Number.POSITIVE_INFINITY);
   });
 });

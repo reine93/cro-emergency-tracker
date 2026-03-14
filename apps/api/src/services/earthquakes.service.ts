@@ -2,7 +2,7 @@ import { fetchRecentEarthquakes } from '../data/emsc/emsc.client';
 import type { EmscFeature, EmscFeatureCollection } from '../data/emsc/emsc.types';
 import type { EarthquakeEvent } from '../domain/earthquake.types';
 import { mapEmscToEarthquake } from '../mappers/earthquake.mapper';
-import { isInsideCroatia } from './geo/croatia.geo';
+import { distanceToCroatiaKm, isInsideCroatia } from './geo/croatia.geo';
 
 export type BBox = {
   minLat: number;
@@ -37,6 +37,14 @@ const defaultDeps: EarthquakeServiceDeps = {
   mapEmscToEarthquake,
 };
 
+export function minimumMagnitudeForDistanceKm(distanceKm: number, baseMinMag: number): number {
+  if (distanceKm <= 50) return baseMinMag;
+  if (distanceKm <= 120) return baseMinMag + 0.4;
+  if (distanceKm <= 200) return baseMinMag + 0.9;
+  if (distanceKm <= 300) return baseMinMag + 1.4;
+  return Number.POSITIVE_INFINITY;
+}
+
 export async function getRecentEarthquakes(
   params: GetRecentEarthquakesParams = {},
   deps: EarthquakeServiceDeps = defaultDeps,
@@ -62,8 +70,14 @@ export async function getRecentEarthquakes(
 
   return data.features
     .map((feature) => deps.mapEmscToEarthquake(feature))
-    .filter(
-      (event) => isInsideCroatia(event.latitude, event.longitude) || event.magnitude >= minMag,
-    )
+    .filter((event) => {
+      if (isInsideCroatia(event.latitude, event.longitude)) {
+        return true;
+      }
+
+      const distanceKm = distanceToCroatiaKm(event.latitude, event.longitude);
+      const requiredMagnitude = minimumMagnitudeForDistanceKm(distanceKm, minMag);
+      return event.magnitude >= requiredMagnitude;
+    })
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 }
