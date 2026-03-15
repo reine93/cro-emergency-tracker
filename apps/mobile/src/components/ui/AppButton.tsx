@@ -9,6 +9,7 @@ type AppButtonProps = {
   icon?: ReactNode;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  disabled?: boolean;
 };
 
 export function AppButton({
@@ -17,18 +18,21 @@ export function AppButton({
   icon,
   accessibilityLabel,
   accessibilityHint,
+  disabled = false,
 }: AppButtonProps) {
   return (
     <Pressable
-      style={styles.button}
+      style={[styles.button, disabled ? styles.buttonDisabled : null]}
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled }}
       hitSlop={6}
     >
       {icon}
-      <AppText variant="caption" style={styles.label}>
+      <AppText variant="caption" style={[styles.label, disabled ? styles.labelDisabled : null]}>
         {label}
       </AppText>
     </Pressable>
@@ -50,5 +54,11 @@ const styles = StyleSheet.create({
   },
   label: {
     color: theme.colors.onBrand,
+  },
+  buttonDisabled: {
+    backgroundColor: theme.colors.border,
+  },
+  labelDisabled: {
+    color: theme.colors.textMuted,
   },
 });
