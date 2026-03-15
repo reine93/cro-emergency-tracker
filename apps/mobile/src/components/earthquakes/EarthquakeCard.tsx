@@ -25,7 +25,14 @@ export function EarthquakeCard({ item, onOpenDetails }: EarthquakeCardProps) {
       <AppText variant="caption" muted>
         {item.relativeTime} · {item.depthLabel}
       </AppText>
-      <AppButton label={t('common.details')} onPress={onOpenDetails} />
+      <AppButton
+        label={t('common.details')}
+        onPress={onOpenDetails}
+        accessibilityLabel={t('a11y.common.openDetailsForEvent', {
+          magnitude: item.magnitude,
+          place: item.place,
+        })}
+      />
     </Card>
   );
 }

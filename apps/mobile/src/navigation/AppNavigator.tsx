@@ -1,6 +1,6 @@
 import type { EarthquakeEvent } from '@cro/shared';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { DetailsScreen } from '../screens/DetailsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
@@ -8,6 +8,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { theme } from '../theme/theme';
 import { useI18n } from '../i18n';
+import { AppText } from '../components/ui/AppText';
 import type { AppNavigatorState, MainTab } from './types';
 
 const tabs: MainTab[] = ['Home', 'Tasks', 'Progress', 'Settings'];
@@ -60,19 +61,24 @@ export function AppNavigator() {
   return (
     <View style={styles.root}>
       <View style={styles.screenContainer}>{screen}</View>
-      <View style={styles.tabBar}>
+      <View style={styles.tabBar} accessibilityRole="tablist">
         {tabs.map((tab) => {
           const active = state.activeTab === tab && !state.selectedEarthquake;
           return (
             <Pressable
               key={tab}
-              accessibilityRole="button"
+              accessibilityRole="tab"
+              accessibilityLabel={t('a11y.navigation.openTab', { tab: tabLabels[tab] })}
+              accessibilityState={{ selected: active }}
               onPress={() => goToTab(tab)}
               style={[styles.tabButton, active ? styles.tabButtonActive : null]}
             >
-              <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>
+              <AppText
+                variant="caption"
+                style={[styles.tabLabel, active ? styles.tabLabelActive : null]}
+              >
                 {tabLabels[tab]}
-              </Text>
+              </AppText>
             </Pressable>
           );
         })}
@@ -103,6 +109,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   tabButtonActive: {
     backgroundColor: theme.colors.brandSoft,

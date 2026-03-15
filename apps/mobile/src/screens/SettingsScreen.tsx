@@ -19,6 +19,9 @@ export function SettingsScreen() {
           <Pressable
             style={[styles.langButton, language === 'en' ? styles.langButtonActive : null]}
             onPress={() => setLanguage('en')}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.settings.switchToEnglish')}
+            accessibilityState={{ selected: language === 'en' }}
           >
             <AppText variant="caption" muted={language !== 'en'}>
               {t('settings.english')}
@@ -27,6 +30,9 @@ export function SettingsScreen() {
           <Pressable
             style={[styles.langButton, language === 'hr' ? styles.langButtonActive : null]}
             onPress={() => setLanguage('hr')}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.settings.switchToCroatian')}
+            accessibilityState={{ selected: language === 'hr' }}
           >
             <AppText variant="caption" muted={language !== 'hr'}>
               {t('settings.croatian')}
@@ -51,6 +57,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   langButtonActive: {
     backgroundColor: theme.colors.brandSoft,

@@ -13,7 +13,10 @@ type AppTextProps = PropsWithChildren<{
 
 export function AppText({ children, variant = 'body', muted = false, style }: AppTextProps) {
   return (
-    <Text style={[styles.base, styles[variant], muted ? styles.muted : null, style]}>
+    <Text
+      allowFontScaling
+      style={[styles.base, styles[variant], muted ? styles.muted : null, style]}
+    >
       {children}
     </Text>
   );
@@ -22,6 +25,7 @@ export function AppText({ children, variant = 'body', muted = false, style }: Ap
 const styles = StyleSheet.create({
   base: {
     color: theme.colors.textPrimary,
+    flexShrink: 1,
   },
   title: {
     fontSize: theme.typography.fontSizeXl,

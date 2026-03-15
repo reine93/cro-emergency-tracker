@@ -7,11 +7,26 @@ type AppButtonProps = {
   label: string;
   onPress: () => void;
   icon?: ReactNode;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
-export function AppButton({ label, onPress, icon }: AppButtonProps) {
+export function AppButton({
+  label,
+  onPress,
+  icon,
+  accessibilityLabel,
+  accessibilityHint,
+}: AppButtonProps) {
   return (
-    <Pressable style={styles.button} onPress={onPress}>
+    <Pressable
+      style={styles.button}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      hitSlop={6}
+    >
       {icon}
       <AppText variant="caption" style={styles.label}>
         {label}
@@ -29,6 +44,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
     gap: theme.spacing.xs,
   },
   label: {

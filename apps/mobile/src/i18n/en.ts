@@ -104,4 +104,26 @@ export const en = {
     invalidShape: 'Server returned invalid response data.',
     generic: 'Failed to load earthquake data.',
   },
+  a11y: {
+    common: {
+      openDetailsForEvent: 'Open details for magnitude {{magnitude}} event at {{place}}',
+    },
+    navigation: {
+      openTab: 'Open {{tab}} tab',
+    },
+    home: {
+      timeRangeButton: 'Time range filter',
+      timeRangeButtonHint: 'Opens list of time-range options for the earthquake feed',
+      selectTimeRangeOption: 'Select {{option}}',
+      earthquakeList: 'Recent earthquakes list',
+      pullToRefresh: 'Pull to refresh earthquakes',
+    },
+    details: {
+      backToList: 'Go back to earthquake list',
+    },
+    settings: {
+      switchToEnglish: 'Switch app language to English',
+      switchToCroatian: 'Switch app language to Croatian',
+    },
+  },
 } as const;

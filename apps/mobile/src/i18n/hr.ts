@@ -104,4 +104,27 @@ export const hr = {
     invalidShape: 'Poslužitelj je vratio neispravan format podataka.',
     generic: 'Neuspješno učitavanje podataka o potresu.',
   },
+  a11y: {
+    common: {
+      openDetailsForEvent:
+        'Otvori detalje za događaj magnitude {{magnitude}} na lokaciji {{place}}',
+    },
+    navigation: {
+      openTab: 'Otvori karticu {{tab}}',
+    },
+    home: {
+      timeRangeButton: 'Filtar vremenskog raspona',
+      timeRangeButtonHint: 'Otvara popis vremenskih raspona za prikaz potresa',
+      selectTimeRangeOption: 'Odaberi {{option}}',
+      earthquakeList: 'Popis nedavnih potresa',
+      pullToRefresh: 'Povuci za osvježavanje potresa',
+    },
+    details: {
+      backToList: 'Povratak na popis potresa',
+    },
+    settings: {
+      switchToEnglish: 'Promijeni jezik aplikacije na engleski',
+      switchToCroatian: 'Promijeni jezik aplikacije na hrvatski',
+    },
+  },
 } as const;

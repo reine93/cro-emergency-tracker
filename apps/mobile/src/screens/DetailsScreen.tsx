@@ -87,7 +87,11 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
       </Card>
 
       <View style={styles.backButtonWrap}>
-        <AppButton label={t('details.backToList')} onPress={onBack} />
+        <AppButton
+          label={t('details.backToList')}
+          onPress={onBack}
+          accessibilityLabel={t('a11y.details.backToList')}
+        />
       </View>
     </ScreenScaffold>
   );

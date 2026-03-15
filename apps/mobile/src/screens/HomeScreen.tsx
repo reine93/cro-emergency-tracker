@@ -61,6 +61,10 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
         <Pressable
           style={styles.filterButton}
           onPress={() => setShowWindowOptions((value) => !value)}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.home.timeRangeButton')}
+          accessibilityHint={t('a11y.home.timeRangeButtonHint')}
+          accessibilityState={{ expanded: showWindowOptions }}
         >
           <AppText variant="caption">{selectedWindowLabel}</AppText>
         </Pressable>
@@ -94,6 +98,9 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
                 key={option.value}
                 onPress={() => onSelectWindow(option.value)}
                 style={[styles.optionButton, selected ? styles.optionButtonSelected : null]}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.home.selectTimeRangeOption', { option: option.label })}
+                accessibilityState={{ selected }}
               >
                 <AppText variant="caption" muted={!selected}>
                   {option.label}
@@ -118,8 +125,15 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
+          accessibilityLabel={t('a11y.home.earthquakeList')}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refresh}
+              accessibilityLabel={t('a11y.home.pullToRefresh')}
+            />
+          }
           renderItem={({ item }) => (
             <EarthquakeCard item={item} onOpenDetails={() => onOpenDetails(item.raw)} />
           )}
@@ -142,11 +156,15 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   optionButton: {
     borderRadius: theme.radius.md,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   optionButtonSelected: {
     backgroundColor: theme.colors.brandSoft,
