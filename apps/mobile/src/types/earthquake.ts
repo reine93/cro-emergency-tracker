@@ -2,6 +2,7 @@ import type { EarthquakeEvent } from '@cro/shared';
 
 export type EarthquakeListItem = {
   id: string;
+  raw: EarthquakeEvent;
   magnitude: number;
   place: string;
   source: string;
@@ -36,6 +37,7 @@ export function formatDepthLabel(depthKm?: number): string {
 export function toEarthquakeListItem(event: EarthquakeEvent, now = Date.now()): EarthquakeListItem {
   return {
     id: event.id,
+    raw: event,
     magnitude: event.magnitude,
     place: event.place,
     source: event.source,

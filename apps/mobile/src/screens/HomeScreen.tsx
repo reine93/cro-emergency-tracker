@@ -1,14 +1,17 @@
 import type { EarthquakeEvent } from '@cro/shared';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/state/EmptyState';
 import { ErrorState } from '../components/state/ErrorState';
 import { LoadingState } from '../components/state/LoadingState';
-import { AppButton } from '../components/ui/AppButton';
 import { AppText } from '../components/ui/AppText';
-import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { getRecentEarthquakes } from '../api/earthquakes.api';
+import { EarthquakeCard } from '../components/earthquakes/EarthquakeCard';
+import {
+  EARTHQUAKE_TIME_WINDOW_OPTIONS,
+  EarthquakeTimeWindow,
+  useRecentEarthquakes,
+} from '../hooks/useRecentEarthquakes';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
@@ -16,92 +19,113 @@ type HomeScreenProps = {
   onOpenDetails: (event: EarthquakeEvent) => void;
 };
 
-const sampleEvent: EarthquakeEvent = {
-  id: 'sample-1',
-  source: 'EMSC',
-  time: new Date().toISOString(),
-  magnitude: 2.8,
-  depthKm: 9.2,
-  latitude: 45.81,
-  longitude: 15.98,
-  place: 'ZAGREB AREA',
-  authority: 'EMSC',
-};
-
 export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
-  const [isDebugLoading, setIsDebugLoading] = useState(false);
-  const [debugError, setDebugError] = useState<string | null>(null);
-  const [debugResult, setDebugResult] = useState<string | null>(null);
+  const [timeWindow, setTimeWindow] = useState<EarthquakeTimeWindow>(
+    EarthquakeTimeWindow.LastMonth,
+  );
+  const [showWindowOptions, setShowWindowOptions] = useState(false);
+  const { items, isLoading, isRefreshing, error, refresh } = useRecentEarthquakes(timeWindow);
 
-  const runDebugApiTest = async () => {
-    setIsDebugLoading(true);
-    setDebugError(null);
-    setDebugResult(null);
+  const selectedWindowLabel = useMemo(
+    () =>
+      EARTHQUAKE_TIME_WINDOW_OPTIONS.find((option) => option.value === timeWindow)?.label ??
+      'Last month',
+    [timeWindow],
+  );
 
-    try {
-      const items = await getRecentEarthquakes({ hours: 336, minMag: 2.5 });
-      const first = items[0];
-      setDebugResult(
-        first
-          ? `Fetched ${items.length} items. First: M${first.magnitude} · ${first.place} (${first.relativeTime}).`
-          : 'Fetched 0 items.',
-      );
-    } catch (error) {
-      setDebugError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsDebugLoading(false);
-    }
+  const onSelectWindow = (windowValue: EarthquakeTimeWindow) => {
+    setTimeWindow(windowValue);
+    setShowWindowOptions(false);
   };
 
   return (
     <ScreenScaffold
       title="Recent Earthquakes"
-      subtitle="Foundation screen for FE1. Feed cards come in FE5."
+      subtitle="Live feed from backend with pull-to-refresh."
     >
-      <Card>
-        <Badge label="Sample" />
-        <AppText variant="subtitle">Sample event card</AppText>
+      <View style={styles.filterRow}>
         <AppText variant="caption" muted>
-          M {sampleEvent.magnitude} · {sampleEvent.place}
+          Time range
         </AppText>
-        <AppText variant="caption" muted>
-          Depth {sampleEvent.depthKm} km
-        </AppText>
-        <AppButton label="Open details screen" onPress={() => onOpenDetails(sampleEvent)} />
-      </Card>
-
-      <View style={styles.statePreview}>
-        <EmptyState
-          title="No more sample items"
-          description="Loading/error states are now available as shared FE3 components."
-        />
+        <Pressable
+          style={styles.filterButton}
+          onPress={() => setShowWindowOptions((value) => !value)}
+        >
+          <AppText variant="caption">{selectedWindowLabel}</AppText>
+        </Pressable>
       </View>
 
-      <View style={styles.statePreview}>
+      {showWindowOptions ? (
         <Card>
-          <Badge label="Debug only (remove in FE5)" />
-          <AppText variant="subtitle">FE4 API test panel</AppText>
-          <AppText variant="caption" muted>
-            Runs getRecentEarthquakes with current API base URL.
-          </AppText>
-          <AppButton label="Test API fetch" onPress={runDebugApiTest} />
-          {isDebugLoading ? <LoadingState message="Calling backend..." /> : null}
-          {debugError ? (
-            <ErrorState
-              title="API test failed"
-              description={debugError}
-              onRetry={runDebugApiTest}
-            />
-          ) : null}
-          {debugResult ? <AppText variant="caption">{debugResult}</AppText> : null}
+          {EARTHQUAKE_TIME_WINDOW_OPTIONS.map((option) => {
+            const selected = option.value === timeWindow;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => onSelectWindow(option.value)}
+                style={[styles.optionButton, selected ? styles.optionButtonSelected : null]}
+              >
+                <AppText variant="caption" muted={!selected}>
+                  {option.label}
+                </AppText>
+              </Pressable>
+            );
+          })}
         </Card>
-      </View>
+      ) : null}
+
+      {isLoading ? <LoadingState message="Loading recent earthquakes..." /> : null}
+
+      {!isLoading && error ? (
+        <ErrorState title="Could not load earthquakes" description={error} onRetry={refresh} />
+      ) : null}
+
+      {!isLoading && !error && items.length === 0 ? (
+        <EmptyState
+          title="No earthquakes found"
+          description="Try another time range or pull to refresh."
+        />
+      ) : null}
+
+      {!isLoading && !error && items.length > 0 ? (
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+          renderItem={({ item }) => (
+            <EarthquakeCard item={item} onOpenDetails={() => onOpenDetails(item.raw)} />
+          )}
+        />
+      ) : null}
     </ScreenScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  statePreview: {
-    marginTop: theme.spacing.lg,
+  filterRow: {
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
+  },
+  filterButton: {
+    alignSelf: 'flex-start',
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  optionButton: {
+    borderRadius: theme.radius.md,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  optionButtonSelected: {
+    backgroundColor: theme.colors.brandSoft,
+  },
+  listContent: {
+    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
   },
 });
