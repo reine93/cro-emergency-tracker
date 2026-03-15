@@ -1,6 +1,7 @@
 import type { EarthquakeEvent } from '@cro/shared';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenScaffold } from './ScreenScaffold';
+import { theme } from '../theme/theme';
 
 type DetailsScreenProps = {
   event: EarthquakeEvent;
@@ -26,27 +27,28 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: '#d7dce5',
+    borderColor: theme.colors.border,
+    ...theme.shadows.card,
   },
   line: {
-    color: '#21344d',
-    fontSize: 14,
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.fontSizeSm,
   },
   button: {
     alignSelf: 'flex-start',
-    backgroundColor: '#1d5fd1',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: 12,
+    backgroundColor: theme.colors.brand,
+    borderRadius: theme.radius.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.md,
   },
   buttonLabel: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: theme.colors.onBrand,
+    fontWeight: theme.typography.fontWeightSemibold,
   },
 });

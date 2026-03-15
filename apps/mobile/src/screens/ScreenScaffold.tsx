@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { theme } from '../theme/theme';
 
 type ScreenScaffoldProps = PropsWithChildren<{
   title: string;
@@ -22,25 +23,25 @@ export function ScreenScaffold({ title, subtitle, children }: ScreenScaffoldProp
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f6f8fb',
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 8,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#122033',
+    fontSize: theme.typography.fontSizeXl,
+    fontWeight: theme.typography.fontWeightBold,
+    color: theme.colors.textPrimary,
   },
   subtitle: {
-    color: '#4f5d75',
-    fontSize: 14,
+    color: theme.colors.textMuted,
+    fontSize: theme.typography.fontSizeSm,
   },
   content: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: theme.spacing.sm,
   },
 });

@@ -6,6 +6,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
+import { theme } from '../theme/theme';
 import type { AppNavigatorState, MainTab } from './types';
 
 const tabs: MainTab[] = ['Home', 'Tasks', 'Progress', 'Settings'];
@@ -72,7 +73,7 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#f6f8fb',
+    backgroundColor: theme.colors.background,
   },
   screenContainer: {
     flex: 1,
@@ -80,27 +81,27 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#d7dce5',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 8,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm,
   },
   tabButton: {
     flex: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: theme.radius.md,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
   },
   tabButtonActive: {
-    backgroundColor: '#e9f0ff',
+    backgroundColor: theme.colors.brandSoft,
   },
   tabLabel: {
-    color: '#4d5d75',
-    fontWeight: '500',
+    color: theme.colors.textMuted,
+    fontWeight: theme.typography.fontWeightMedium,
   },
   tabLabelActive: {
-    color: '#1d5fd1',
-    fontWeight: '700',
+    color: theme.colors.brand,
+    fontWeight: theme.typography.fontWeightBold,
   },
 });
