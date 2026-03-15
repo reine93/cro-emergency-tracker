@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import type { RecentEarthquakesResponse } from '@cro/shared';
+import { injectDebugEarthquake } from '../data/debug/injected-earthquakes.store';
 import { getRecentEarthquakes } from '../services/earthquakes.service';
 
 function parsePositiveNumber(value: unknown): number | undefined {
@@ -37,5 +38,19 @@ export async function getRecentEarthquakesHandler(req: Request, res: Response) {
     return res.status(200).json(payload);
   } catch {
     return res.status(502).json({ message: 'Failed to fetch earthquake data' });
+  }
+}
+
+export function injectDebugEarthquakeHandler(req: Request, res: Response) {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ message: 'Not found' });
+  }
+
+  try {
+    const event = injectDebugEarthquake(req.body ?? {});
+    return res.status(201).json({ item: event });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid debug payload';
+    return res.status(400).json({ message });
   }
 }

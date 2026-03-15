@@ -135,4 +135,33 @@ describe('getRecentEarthquakes', () => {
     expect(minimumMagnitudeForDistanceKm(260, 2.5)).toBe(3.9);
     expect(minimumMagnitudeForDistanceKm(350, 2.5)).toBe(Number.POSITIVE_INFINITY);
   });
+
+  it('merges injected debug events into the feed before filtering/sorting', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      type: 'FeatureCollection',
+      metadata: { count: 0 },
+      features: [],
+    });
+
+    const debugEvent: EarthquakeEvent = {
+      id: 'debug_1',
+      source: 'EMSC',
+      time: '2026-01-02T00:00:00Z',
+      magnitude: 4.5,
+      latitude: 45.81,
+      longitude: 15.98,
+      place: 'CROATIA (DEBUG)',
+    };
+
+    const result = await getRecentEarthquakes(
+      { hours: 24, minMag: 2.5 },
+      {
+        fetchRecentEarthquakes: fetchMock,
+        mapEmscToEarthquake: vi.fn(),
+        getDebugEarthquakes: () => [debugEvent],
+      },
+    );
+
+    expect(result).toEqual([debugEvent]);
+  });
 });

@@ -1,4 +1,5 @@
 import { fetchRecentEarthquakes } from '../data/emsc/emsc.client';
+import { getActiveDebugEarthquakes } from '../data/debug/injected-earthquakes.store';
 import type { EmscFeature, EmscFeatureCollection } from '../data/emsc/emsc.types';
 import type { EarthquakeEvent, RecentEarthquakesQuery } from '@cro/shared';
 import { mapEmscToEarthquake } from '../mappers/earthquake.mapper';
@@ -25,11 +26,13 @@ type EarthquakeServiceDeps = {
     bbox?: BBox;
   }) => Promise<EmscFeatureCollection>;
   mapEmscToEarthquake: (feature: EmscFeature) => EarthquakeEvent;
+  getDebugEarthquakes: () => EarthquakeEvent[];
 };
 
 const defaultDeps: EarthquakeServiceDeps = {
   fetchRecentEarthquakes,
   mapEmscToEarthquake,
+  getDebugEarthquakes: getActiveDebugEarthquakes,
 };
 
 export function minimumMagnitudeForDistanceKm(distanceKm: number, baseMinMag: number): number {
@@ -42,8 +45,9 @@ export function minimumMagnitudeForDistanceKm(distanceKm: number, baseMinMag: nu
 
 export async function getRecentEarthquakes(
   params: RecentEarthquakesQuery = {},
-  deps: EarthquakeServiceDeps = defaultDeps,
+  deps: Partial<EarthquakeServiceDeps> = {},
 ): Promise<EarthquakeEvent[]> {
+  const resolvedDeps = { ...defaultDeps, ...deps };
   const hours = params.hours ?? 24;
   const minMag = params.minMag ?? 2.5;
 
@@ -57,14 +61,17 @@ export async function getRecentEarthquakes(
   const to = new Date();
   const from = new Date(to.getTime() - hours * 60 * 60 * 1000);
 
-  const data = await deps.fetchRecentEarthquakes({
+  const data = await resolvedDeps.fetchRecentEarthquakes({
     from,
     to,
     bbox: CROATIA_QUERY_BBOX,
   });
+  const debugEvents = resolvedDeps.getDebugEarthquakes();
 
-  return data.features
-    .map((feature) => deps.mapEmscToEarthquake(feature))
+  return [
+    ...data.features.map((feature) => resolvedDeps.mapEmscToEarthquake(feature)),
+    ...debugEvents,
+  ]
     .filter((event) => {
       if (isInsideCroatia(event.latitude, event.longitude)) {
         return true;

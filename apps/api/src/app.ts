@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import { getRecentEarthquakesHandler } from './controllers/earthquakes.controller';
+import {
+  getRecentEarthquakesHandler,
+  injectDebugEarthquakeHandler,
+} from './controllers/earthquakes.controller';
 
 export function createApp() {
   const app = express();
@@ -13,6 +16,7 @@ export function createApp() {
   });
 
   app.get('/api/earthquakes/recent', getRecentEarthquakesHandler);
+  app.post('/api/debug/earthquakes/inject', injectDebugEarthquakeHandler);
 
   return app;
 }
