@@ -38,11 +38,10 @@ export type GamificationAnalyticsSummary = {
       completionRate: number;
     }
   >;
-  streakRetention: {
-    bucket1: number;
-    bucket2to3: number;
-    bucket4to7: number;
-    bucket8plus: number;
+  streakSessionState: {
+    latestStreakDays: number;
+    maxStreakDaysSeen: number;
+    snapshotCount: number;
   };
   notificationOpenRate: {
     sent: number;

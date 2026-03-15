@@ -32,10 +32,9 @@ export function buildGamificationAnalyticsSummary(
   let notificationSent = 0;
   let notificationOpened = 0;
 
-  let bucket1 = 0;
-  let bucket2to3 = 0;
-  let bucket4to7 = 0;
-  let bucket8plus = 0;
+  let latestStreakDays = 0;
+  let maxStreakDaysSeen = 0;
+  let snapshotCount = 0;
 
   const xpByDate = new Map<string, { totalXp: number; level: number }>();
   const deviceIds = new Set<string>();
@@ -59,10 +58,9 @@ export function buildGamificationAnalyticsSummary(
     if (event.name === 'xp_progress_snapshot') {
       const streak = asNumber(event.payload?.streakDays);
       if (streak !== null) {
-        if (streak <= 1) bucket1 += 1;
-        else if (streak <= 3) bucket2to3 += 1;
-        else if (streak <= 7) bucket4to7 += 1;
-        else bucket8plus += 1;
+        latestStreakDays = streak;
+        maxStreakDaysSeen = Math.max(maxStreakDaysSeen, streak);
+        snapshotCount += 1;
       }
 
       const totalXp = asNumber(event.payload?.totalXp);
@@ -107,11 +105,10 @@ export function buildGamificationAnalyticsSummary(
         completionRate: percentage(moduleCompleted.home, moduleStarted.home),
       },
     },
-    streakRetention: {
-      bucket1,
-      bucket2to3,
-      bucket4to7,
-      bucket8plus,
+    streakSessionState: {
+      latestStreakDays,
+      maxStreakDaysSeen,
+      snapshotCount,
     },
     notificationOpenRate: {
       sent: notificationSent,
@@ -135,10 +132,13 @@ export function summaryToCsv(summary: GamificationAnalyticsSummary): string {
     lines.push(`module_sessions.${module},completion_rate,${row.completionRate}`);
   });
 
-  lines.push(`streak_retention,bucket_1,${summary.streakRetention.bucket1}`);
-  lines.push(`streak_retention,bucket_2_3,${summary.streakRetention.bucket2to3}`);
-  lines.push(`streak_retention,bucket_4_7,${summary.streakRetention.bucket4to7}`);
-  lines.push(`streak_retention,bucket_8_plus,${summary.streakRetention.bucket8plus}`);
+  lines.push(
+    `streak_session_state,latest_streak_days,${summary.streakSessionState.latestStreakDays}`,
+  );
+  lines.push(
+    `streak_session_state,max_streak_days_seen,${summary.streakSessionState.maxStreakDaysSeen}`,
+  );
+  lines.push(`streak_session_state,snapshot_count,${summary.streakSessionState.snapshotCount}`);
 
   lines.push(`notification_open_rate,sent,${summary.notificationOpenRate.sent}`);
   lines.push(`notification_open_rate,opened,${summary.notificationOpenRate.opened}`);

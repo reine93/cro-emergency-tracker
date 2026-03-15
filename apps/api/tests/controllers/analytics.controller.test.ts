@@ -20,7 +20,7 @@ vi.mock('../../src/services/analytics/analytics-summary.service', () => ({
       kit: { started: 0, completed: 0, completionRate: 0 },
       home: { started: 0, completed: 0, completionRate: 0 },
     },
-    streakRetention: { bucket1: 0, bucket2to3: 0, bucket4to7: 0, bucket8plus: 0 },
+    streakSessionState: { latestStreakDays: 0, maxStreakDaysSeen: 0, snapshotCount: 0 },
     notificationOpenRate: { sent: 0, opened: 0, openRate: 0 },
     xpProgression: [],
   }),

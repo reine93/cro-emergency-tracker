@@ -5,7 +5,7 @@ import {
 } from '../../src/services/analytics/analytics-summary.service';
 
 describe('buildGamificationAnalyticsSummary', () => {
-  it('computes module completion, notification open rate and xp progression', () => {
+  it('computes module completion, notification open rate and session xp progression', () => {
     const summary = buildGamificationAnalyticsSummary([
       {
         id: '1',
@@ -52,7 +52,9 @@ describe('buildGamificationAnalyticsSummary', () => {
     expect(summary.moduleSessions.quiz.completionRate).toBe(100);
     expect(summary.notificationOpenRate.openRate).toBe(100);
     expect(summary.xpProgression).toHaveLength(1);
-    expect(summary.streakRetention.bucket2to3).toBe(1);
+    expect(summary.streakSessionState.latestStreakDays).toBe(3);
+    expect(summary.streakSessionState.maxStreakDaysSeen).toBe(3);
+    expect(summary.streakSessionState.snapshotCount).toBe(1);
   });
 });
 
