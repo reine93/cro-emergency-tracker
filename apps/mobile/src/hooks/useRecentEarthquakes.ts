@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { EarthquakeListItem } from '../types/earthquake';
-import { formatEventTimeCroatia } from '../types/earthquake';
+import { formatEventTimeCroatia, toEarthquakeListItem } from '../types/earthquake';
 import { getRecentEarthquakes } from '../api/earthquakes.api';
-import { loadEarthquakesCache, saveEarthquakesCache } from '../storage/earthquakes.storage';
+import {
+  loadEarthquakesCache,
+  loadLatestEarthquakesCache,
+  saveEarthquakesCache,
+} from '../storage/earthquakes.storage';
 
 export enum EarthquakeTimeWindow {
   Last24Hours = 'LAST_24_HOURS',
@@ -54,6 +58,10 @@ type UseRecentEarthquakesResult = {
 
 const DEFAULT_POLL_INTERVAL_MS = 10 * 60 * 1000;
 const DEV_POLL_INTERVAL_MS = 30 * 1000;
+let sessionLastSuccess: {
+  items: EarthquakeListItem[];
+  updatedAtIso: string;
+} | null = null;
 
 function getPollIntervalMs(): number {
   const fromEnv = Number(process.env.EXPO_PUBLIC_POLL_MS);
@@ -74,6 +82,10 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
   const [dataSource, setDataSource] = useState<'live' | 'cache' | null>(null);
   const isFetchingRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const lastSuccessRef = useRef<{
+    items: EarthquakeListItem[];
+    updatedAtIso: string;
+  } | null>(null);
 
   const runFetch = useCallback(
     async (refreshing = false, silent = false) => {
@@ -95,15 +107,40 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
         });
         setItems(data);
         setDataSource('live');
-        setLastUpdatedLabel(formatEventTimeCroatia(new Date().toISOString()));
-        await saveEarthquakesCache(timeWindow, data);
+        setInfoMessage(null);
+        const updatedAtIso = new Date().toISOString();
+        setLastUpdatedLabel(formatEventTimeCroatia(updatedAtIso));
+        lastSuccessRef.current = { items: data, updatedAtIso };
+        sessionLastSuccess = { items: data, updatedAtIso };
+        await saveEarthquakesCache(
+          timeWindow,
+          data.map((item) => item.raw),
+        );
       } catch (fetchError) {
-        const cached = await loadEarthquakesCache(timeWindow);
-        if (cached) {
-          setItems(cached.items);
+        const byWindow = await loadEarthquakesCache(timeWindow).catch(() => null);
+        const latest = await loadLatestEarthquakesCache().catch(() => null);
+        const fallback = byWindow ?? latest;
+
+        if (fallback) {
+          const mapped = fallback.events.map((event) => toEarthquakeListItem(event));
+          setItems(mapped);
           setDataSource('cache');
-          setLastUpdatedLabel(formatEventTimeCroatia(cached.updatedAtIso));
+          setLastUpdatedLabel(formatEventTimeCroatia(fallback.updatedAtIso));
           setInfoMessage('Showing cached data (offline fallback).');
+          setError(null);
+          lastSuccessRef.current = { items: mapped, updatedAtIso: fallback.updatedAtIso };
+          sessionLastSuccess = { items: mapped, updatedAtIso: fallback.updatedAtIso };
+        } else if (lastSuccessRef.current) {
+          setItems(lastSuccessRef.current.items);
+          setDataSource('cache');
+          setLastUpdatedLabel(formatEventTimeCroatia(lastSuccessRef.current.updatedAtIso));
+          setInfoMessage('Showing last in-memory data (offline fallback).');
+          setError(null);
+        } else if (sessionLastSuccess) {
+          setItems(sessionLastSuccess.items);
+          setDataSource('cache');
+          setLastUpdatedLabel(formatEventTimeCroatia(sessionLastSuccess.updatedAtIso));
+          setInfoMessage('Showing session fallback data (offline).');
           setError(null);
         } else {
           setError(
