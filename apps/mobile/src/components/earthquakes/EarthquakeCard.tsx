@@ -17,10 +17,10 @@ export function EarthquakeCard({ item, onOpenDetails }: EarthquakeCardProps) {
         M {item.magnitude} · {item.place}
       </AppText>
       <AppText variant="caption" muted>
-        {item.relativeTime}
+        {item.formattedTime}
       </AppText>
       <AppText variant="caption" muted>
-        {item.depthLabel}
+        {item.relativeTime} · {item.depthLabel}
       </AppText>
       <AppButton label="Details" onPress={onOpenDetails} />
     </Card>

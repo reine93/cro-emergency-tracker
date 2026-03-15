@@ -7,10 +7,38 @@ export type EarthquakeListItem = {
   place: string;
   source: string;
   timeIso: string;
+  formattedTime: string;
   relativeTime: string;
   depthKm?: number;
   depthLabel: string;
 };
+
+export function formatEventTimeCroatia(timeIso: string): string {
+  const date = new Date(timeIso);
+  if (Number.isNaN(date.getTime())) return 'Unknown time';
+
+  const parts = new Intl.DateTimeFormat('hr-HR', {
+    timeZone: 'Europe/Zagreb',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+
+  const day = get('day');
+  const month = get('month');
+  const year = get('year');
+  const hour = get('hour');
+  const minute = get('minute');
+
+  if (!day || !month || !year || !hour || !minute) return 'Unknown time';
+  return `${day}/${month}/${year} ${hour}:${minute}`;
+}
 
 export function formatRelativeTime(timeIso: string, now = Date.now()): string {
   const eventTime = new Date(timeIso).getTime();
@@ -42,6 +70,7 @@ export function toEarthquakeListItem(event: EarthquakeEvent, now = Date.now()): 
     place: event.place,
     source: event.source,
     timeIso: event.time,
+    formattedTime: formatEventTimeCroatia(event.time),
     relativeTime: formatRelativeTime(event.time, now),
     depthKm: event.depthKm,
     depthLabel: formatDepthLabel(event.depthKm),
