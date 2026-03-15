@@ -4,6 +4,14 @@ import { AppButton } from '../components/ui/AppButton';
 import { AppText } from '../components/ui/AppText';
 import { Card } from '../components/ui/Card';
 import { Pill } from '../components/ui/Pill';
+import {
+  evaluateHomeSafety,
+  topHomeSafetyRecommendations,
+  xpForHomeSafetyScore,
+  type HomeSafetyCategory,
+  type HomeSafetyItem,
+} from '../gamification/home.logic';
+import { loadHomeSafetyProgress, saveHomeSafetyProgress } from '../gamification/home.storage';
 import { usePreparedness } from '../gamification/preparedness.context';
 import {
   evaluateKitSelection,
@@ -30,8 +38,13 @@ type KitItem = KitItemDefinition & {
   feedbackKey: string;
 };
 
+type HomeSafetyChecklistItem = HomeSafetyItem & {
+  labelKey: string;
+};
+
 type KitModalStep = 'build' | 'result';
 type QuizModalStep = 'question' | 'feedback' | 'result';
+type HomeModalStep = 'checklist' | 'result';
 
 const QUIZ_START_HEARTS = 3;
 
@@ -244,6 +257,59 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
+const HOME_SAFETY_ITEMS: HomeSafetyChecklistItem[] = [
+  {
+    id: 'secure_shelves',
+    category: 'furniture',
+    weight: 20,
+    labelKey: 'homeSafety.items.secureShelves',
+  },
+  { id: 'anchor_tv', category: 'furniture', weight: 10, labelKey: 'homeSafety.items.anchorTv' },
+  {
+    id: 'remove_heavy_above_bed',
+    category: 'bedroom',
+    weight: 15,
+    labelKey: 'homeSafety.items.removeHeavyAboveBed',
+  },
+  {
+    id: 'identify_safe_spots',
+    category: 'bedroom',
+    weight: 15,
+    labelKey: 'homeSafety.items.identifySafeSpots',
+  },
+  {
+    id: 'secure_kitchen_cabinets',
+    category: 'kitchen',
+    weight: 12,
+    labelKey: 'homeSafety.items.secureKitchenCabinets',
+  },
+  {
+    id: 'store_breakables_low',
+    category: 'kitchen',
+    weight: 8,
+    labelKey: 'homeSafety.items.storeBreakablesLow',
+  },
+  { id: 'family_plan', category: 'planning', weight: 10, labelKey: 'homeSafety.items.familyPlan' },
+  {
+    id: 'emergency_contacts',
+    category: 'planning',
+    weight: 10,
+    labelKey: 'homeSafety.items.emergencyContacts',
+  },
+  {
+    id: 'know_gas_shutoff',
+    category: 'utilities',
+    weight: 10,
+    labelKey: 'homeSafety.items.knowGasShutoff',
+  },
+  {
+    id: 'know_power_shutoff',
+    category: 'utilities',
+    weight: 10,
+    labelKey: 'homeSafety.items.knowPowerShutoff',
+  },
+];
+
 function categoryLabel(category: KitItemCategory, t: (key: string) => string): string {
   switch (category) {
     case 'essential':
@@ -261,6 +327,10 @@ function categoryLabel(category: KitItemCategory, t: (key: string) => string): s
 
 function quizCategoryLabel(category: QuizCategory, t: (key: string) => string): string {
   return t(`quiz.categories.${category}`);
+}
+
+function homeCategoryLabel(category: HomeSafetyCategory, t: (key: string) => string): string {
+  return t(`homeSafety.categories.${category}`);
 }
 
 export function TasksScreen() {
@@ -293,13 +363,24 @@ export function TasksScreen() {
   const [quizResult, setQuizResult] = useState<ReturnType<typeof computeQuizResult> | null>(null);
   const [lastMasteredCategories, setLastMasteredCategories] = useState<QuizCategory[]>([]);
 
+  const [homeBestScore, setHomeBestScore] = useState(0);
+  const [homeAttempts, setHomeAttempts] = useState(0);
+  const [homeModalVisible, setHomeModalVisible] = useState(false);
+  const [homeModalStep, setHomeModalStep] = useState<HomeModalStep>('checklist');
+  const [completedHomeIds, setCompletedHomeIds] = useState<Set<string>>(new Set());
+  const [homeEvaluation, setHomeEvaluation] = useState<ReturnType<
+    typeof evaluateHomeSafety
+  > | null>(null);
+  const [homeRecommendations, setHomeRecommendations] = useState<HomeSafetyChecklistItem[]>([]);
+
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      const [kitProgress, quizProgress] = await Promise.all([
+      const [kitProgress, quizProgress, homeProgress] = await Promise.all([
         loadKitProgress(),
         loadQuizProgress(),
+        loadHomeSafetyProgress(),
       ]);
       if (cancelled) return;
 
@@ -312,6 +393,11 @@ export function TasksScreen() {
         setQuizBestScore(quizProgress.bestScore);
         setQuizAttempts(quizProgress.attempts);
         setCompletedQuizCategories(new Set(quizProgress.completedCategories));
+      }
+
+      if (homeProgress) {
+        setHomeBestScore(homeProgress.bestScore);
+        setHomeAttempts(homeProgress.attempts);
       }
     };
 
@@ -328,6 +414,7 @@ export function TasksScreen() {
     [selectedIds],
   );
   const activeQuestion = QUIZ_QUESTIONS[quizIndex];
+  const homeCompletedCount = completedHomeIds.size;
 
   const closeKitModal = () => {
     setKitModalVisible(false);
@@ -474,6 +561,63 @@ export function TasksScreen() {
     setQuizModalStep('question');
   };
 
+  const closeHomeModal = () => {
+    setHomeModalVisible(false);
+  };
+
+  const openHomeModal = () => {
+    setHomeModalVisible(true);
+    setHomeModalStep('checklist');
+  };
+
+  const toggleHomeItem = (id: string) => {
+    setCompletedHomeIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const onEvaluateHome = async () => {
+    const result = evaluateHomeSafety(HOME_SAFETY_ITEMS, completedHomeIds);
+    const recommendations = topHomeSafetyRecommendations(HOME_SAFETY_ITEMS, completedHomeIds, 3);
+
+    setHomeEvaluation(result);
+    setHomeRecommendations(recommendations);
+    setHomeModalStep('result');
+
+    const nextAttempts = homeAttempts + 1;
+    const improved = result.score > homeBestScore;
+    const nextBest = improved ? result.score : homeBestScore;
+
+    setHomeBestScore(nextBest);
+    setHomeAttempts(nextAttempts);
+
+    const xp = xpForHomeSafetyScore(result.score);
+    addXp(xp, 'home_assessment_completed');
+
+    if (improved) {
+      addXp(10, 'home_score_improved');
+    }
+
+    const moduleScore = Math.max(profile.moduleScores.home, result.score);
+    updateModuleScore('home', moduleScore, 'home_assessment_completed');
+
+    await saveHomeSafetyProgress({
+      bestScore: nextBest,
+      attempts: nextAttempts,
+      lastAssessmentAt: new Date().toISOString(),
+    });
+  };
+
+  const onRetryHome = () => {
+    setHomeModalStep('checklist');
+  };
+
   return (
     <ScreenScaffold title={t('tasks.title')} subtitle={t('tasks.subtitle')}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -505,6 +649,19 @@ export function TasksScreen() {
             />
           </View>
           <AppButton label={t('quiz.openQuiz')} onPress={openQuizModal} />
+        </Card>
+
+        <Card>
+          <AppText variant="subtitle">{t('homeSafety.title')}</AppText>
+          <AppText variant="caption" muted>
+            {t('homeSafety.description')}
+          </AppText>
+          <View style={styles.statsRow}>
+            <Pill label={t('homeSafety.bestScore', { score: homeBestScore })} />
+            <Pill label={t('homeSafety.attempts', { count: homeAttempts })} />
+            <Pill label={t('homeSafety.completedCount', { count: homeCompletedCount })} />
+          </View>
+          <AppButton label={t('homeSafety.openInspector')} onPress={openHomeModal} />
         </Card>
       </ScrollView>
 
@@ -701,6 +858,108 @@ export function TasksScreen() {
 
                 <View style={styles.actionsRow}>
                   <AppButton label={t('quiz.retry')} onPress={openQuizModal} />
+                </View>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={homeModalVisible}
+        onRequestClose={closeHomeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <AppText variant="subtitle">{t('homeSafety.title')}</AppText>
+              <AppButton label={t('homeSafety.backToTasks')} onPress={closeHomeModal} />
+            </View>
+
+            {homeModalStep === 'checklist' ? (
+              <>
+                <AppText variant="caption" muted>
+                  {t('homeSafety.checklistTitle')}
+                </AppText>
+                <ScrollView contentContainerStyle={styles.optionsWrap}>
+                  {HOME_SAFETY_ITEMS.map((item) => {
+                    const checked = completedHomeIds.has(item.id);
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => toggleHomeItem(item.id)}
+                        style={[styles.optionButton, checked ? styles.itemChipSelected : null]}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: checked }}
+                        accessibilityLabel={t('homeSafety.selectItemA11y', {
+                          item: t(item.labelKey),
+                          category: homeCategoryLabel(item.category, t),
+                        })}
+                      >
+                        <AppText>{t(item.labelKey)}</AppText>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={styles.actionsRow}>
+                  <AppButton
+                    label={t('homeSafety.evaluate')}
+                    onPress={() => void onEvaluateHome()}
+                  />
+                </View>
+              </>
+            ) : null}
+
+            {homeModalStep === 'result' && homeEvaluation ? (
+              <ScrollView contentContainerStyle={styles.resultContent}>
+                <AppText variant="subtitle">
+                  {t('homeSafety.resultTitle', {
+                    score: homeEvaluation.score,
+                    risk: t(`homeSafety.riskTier.${homeEvaluation.riskTier}`),
+                  })}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {t('homeSafety.resultMeta', {
+                    completed: homeEvaluation.completedWeight,
+                    total: homeEvaluation.totalWeight,
+                  })}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {t('homeSafety.xpReward', {
+                    xp: xpForHomeSafetyScore(homeEvaluation.score),
+                  })}
+                </AppText>
+
+                <AppText variant="subtitle">{t('homeSafety.categoryScoresTitle')}</AppText>
+                {(Object.keys(homeEvaluation.categoryScores) as HomeSafetyCategory[]).map(
+                  (category) => (
+                    <AppText key={category} variant="caption" muted>
+                      {t('homeSafety.categoryScoreLine', {
+                        category: homeCategoryLabel(category, t),
+                        value: homeEvaluation.categoryScores[category],
+                      })}
+                    </AppText>
+                  ),
+                )}
+
+                <AppText variant="subtitle">{t('homeSafety.recommendationsTitle')}</AppText>
+                {homeRecommendations.length ? (
+                  homeRecommendations.map((item) => (
+                    <AppText key={item.id} variant="caption" muted>
+                      • {t(item.labelKey)}
+                    </AppText>
+                  ))
+                ) : (
+                  <AppText variant="caption" muted>
+                    {t('homeSafety.recommendationsEmpty')}
+                  </AppText>
+                )}
+
+                <View style={styles.actionsRow}>
+                  <AppButton label={t('homeSafety.retry')} onPress={onRetryHome} />
                 </View>
               </ScrollView>
             ) : null}
