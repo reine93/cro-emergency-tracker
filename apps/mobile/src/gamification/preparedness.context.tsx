@@ -14,6 +14,7 @@ import {
   createDefaultPreparednessProfile,
 } from './preparedness.logic';
 import { loadPreparednessProfile, savePreparednessProfile } from './preparedness.storage';
+import { trackAnalyticsEvent } from '../analytics/tracker';
 import type {
   PreparednessModule,
   PreparednessProfile,
@@ -65,6 +66,14 @@ export function PreparednessProvider({ children }: PropsWithChildren) {
     setProfile((current) => {
       const next = applyXpActivity(current, timestamp, delta);
       void savePreparednessProfile(next);
+      queueMicrotask(() => {
+        trackAnalyticsEvent('xp_progress_snapshot', {
+          totalXp: next.totalXp,
+          level: next.level,
+          streakDays: next.streakDays,
+          reason,
+        });
+      });
       return next;
     });
     setLastXpDelta({ amount: delta, reason, atIso: timestamp });
@@ -77,6 +86,15 @@ export function PreparednessProvider({ children }: PropsWithChildren) {
       setProfile((current) => {
         const next = applyModuleScore(current, timestamp, module, score);
         void savePreparednessProfile(next);
+        queueMicrotask(() => {
+          trackAnalyticsEvent('xp_progress_snapshot', {
+            totalXp: next.totalXp,
+            level: next.level,
+            streakDays: next.streakDays,
+            module,
+            score,
+          });
+        });
         return next;
       });
 

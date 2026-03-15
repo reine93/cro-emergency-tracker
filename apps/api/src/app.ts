@@ -8,6 +8,11 @@ import {
   previewGamificationRemindersHandler,
   registerExpoPushTokenHandler,
 } from './controllers/notifications.controller';
+import {
+  exportAnalyticsCsvHandler,
+  getAnalyticsSummaryHandler,
+  ingestAnalyticsEventsHandler,
+} from './controllers/analytics.controller';
 
 export function createApp() {
   const app = express();
@@ -23,6 +28,9 @@ export function createApp() {
   app.post('/api/debug/earthquakes/inject', injectDebugEarthquakeHandler);
   app.post('/api/notifications/expo/register', registerExpoPushTokenHandler);
   app.get('/api/debug/notifications/reminders/preview', previewGamificationRemindersHandler);
+  app.post('/api/analytics/events', ingestAnalyticsEventsHandler);
+  app.get('/api/analytics/summary', getAnalyticsSummaryHandler);
+  app.get('/api/analytics/export.csv', exportAnalyticsCsvHandler);
 
   return app;
 }

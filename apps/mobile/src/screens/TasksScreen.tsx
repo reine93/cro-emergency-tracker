@@ -33,6 +33,7 @@ import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 import type { NotificationModuleTarget } from '../hooks/useNotificationOrchestrator';
+import { trackAnalyticsEvent } from '../analytics/tracker';
 
 type KitItem = KitItemDefinition & {
   labelKey: string;
@@ -434,6 +435,7 @@ export function TasksScreen({
   const openKitModal = () => {
     setKitModalStep('build');
     setKitModalVisible(true);
+    trackAnalyticsEvent('module_session_started', { module: 'kit' });
   };
 
   const toggleItem = (id: string) => {
@@ -475,6 +477,11 @@ export function TasksScreen({
       attempts: nextAttempts,
       lastPlayedAt: new Date().toISOString(),
     });
+    trackAnalyticsEvent('module_session_completed', {
+      module: 'kit',
+      score: result.score,
+      completion: true,
+    });
   };
 
   const onRetryKit = () => {
@@ -494,6 +501,7 @@ export function TasksScreen({
     setQuizFeedback(null);
     setQuizResult(null);
     setLastMasteredCategories([]);
+    trackAnalyticsEvent('module_session_started', { module: 'quiz' });
   };
 
   const onSelectQuizOption = (optionId: string) => {
@@ -556,6 +564,11 @@ export function TasksScreen({
       completedCategories: Array.from(nextCompleted),
       lastPlayedAt: new Date().toISOString(),
     });
+    trackAnalyticsEvent('module_session_completed', {
+      module: 'quiz',
+      score: result.percentage,
+      completion: true,
+    });
   };
 
   const onContinueQuiz = () => {
@@ -579,6 +592,7 @@ export function TasksScreen({
   const openHomeModal = () => {
     setHomeModalVisible(true);
     setHomeModalStep('checklist');
+    trackAnalyticsEvent('module_session_started', { module: 'home' });
   };
 
   useEffect(() => {
@@ -638,6 +652,11 @@ export function TasksScreen({
       bestScore: nextBest,
       attempts: nextAttempts,
       lastAssessmentAt: new Date().toISOString(),
+    });
+    trackAnalyticsEvent('module_session_completed', {
+      module: 'home',
+      score: result.score,
+      completion: true,
     });
   };
 

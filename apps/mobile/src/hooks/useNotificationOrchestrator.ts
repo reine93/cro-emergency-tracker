@@ -14,6 +14,7 @@ import { registerExpoPushToken } from '../api/notifications.api';
 import type { PreparednessProfile, PreparednessXpDelta } from '../gamification/preparedness.types';
 import { useNotificationPolicy } from '../notifications/policy.context';
 import { getOrCreatePushDeviceId } from '../notifications/push-registration.storage';
+import { trackAnalyticsEvent } from '../analytics/tracker';
 
 export type NotificationRouteTarget = 'home' | 'feed' | 'tasks' | 'progress';
 export type NotificationModuleTarget = 'quiz' | 'kit' | 'home';
@@ -229,6 +230,13 @@ export function useNotificationOrchestrator({
     return addNotificationResponseListener((response) => {
       const route = parseRouteData(response.notification.request.content.data);
       if (!route) return;
+      const data = response.notification.request.content.data as
+        | Record<string, unknown>
+        | undefined;
+      trackAnalyticsEvent('notification_opened', {
+        type: data?.type ?? 'unknown',
+        routeTarget: route.route,
+      });
       onNavigateFromNotification(route);
     });
   }, [onNavigateFromNotification]);
@@ -267,6 +275,7 @@ export function useNotificationOrchestrator({
       },
     })
       .then(() => {
+        trackAnalyticsEvent('notification_sent', { type: 'earthquake', routeTarget: 'feed' });
         setNotificationStatus(
           t('notifications.sent', {
             magnitude: newest.magnitude.toFixed(1),
@@ -281,6 +290,10 @@ export function useNotificationOrchestrator({
     if (policy.enabled.earthquakeTrainingCombo && newest.magnitude >= 4.0) {
       const comboKey = `combo:${newest.id}:${dayBucket()}`;
       if (shouldDedup(comboKey) && canSendCategoryNow('earthquakeTrainingCombo')) {
+        trackAnalyticsEvent('notification_sent', {
+          type: 'earthquake_training_combo',
+          routeTarget: 'tasks',
+        });
         void sendNotification({
           title: t('notifications.comboTitle'),
           body: t('notifications.comboBody'),
@@ -300,6 +313,7 @@ export function useNotificationOrchestrator({
     if (profile.level > lastLevelRef.current && policy.enabled.levelUp) {
       const key = `level:${profile.level}`;
       if (shouldDedup(key) && canSendCategoryNow('levelUp')) {
+        trackAnalyticsEvent('notification_sent', { type: 'level_up', routeTarget: 'progress' });
         void sendNotification({
           title: t('notifications.levelUpTitle'),
           body: t('notifications.levelUpBody', { level: profile.level }),
@@ -324,6 +338,7 @@ export function useNotificationOrchestrator({
       known.add(badge.id);
       const key = `badge:${badge.id}`;
       if (!shouldDedup(key) || !canSendCategoryNow('badgeUnlocked')) return;
+      trackAnalyticsEvent('notification_sent', { type: 'badge_unlocked', routeTarget: 'progress' });
       void sendNotification({
         title: t('notifications.badgeUnlockedTitle'),
         body: t('notifications.badgeUnlockedBody', { badge: t(`progress.badges.${badge.id}`) }),
@@ -342,6 +357,10 @@ export function useNotificationOrchestrator({
     if (policy.enabled.dailyChallenge && !isToday(profile.lastActivityAt)) {
       const key = `daily:${todayBucket}`;
       if (shouldDedup(key) && canSendCategoryNow('dailyChallenge')) {
+        trackAnalyticsEvent('notification_sent', {
+          type: 'daily_challenge',
+          routeTarget: 'progress',
+        });
         void sendNotification({
           title: t('notifications.dailyChallengeTitle'),
           body: t('notifications.dailyChallengeBody'),
@@ -356,6 +375,10 @@ export function useNotificationOrchestrator({
     if (policy.enabled.streakAtRisk && dayDiffFromToday(profile.lastActivityAt) === 1) {
       const key = `streak:${todayBucket}`;
       if (shouldDedup(key) && canSendCategoryNow('streakAtRisk')) {
+        trackAnalyticsEvent('notification_sent', {
+          type: 'streak_at_risk',
+          routeTarget: 'progress',
+        });
         void sendNotification({
           title: t('notifications.streakRiskTitle'),
           body: t('notifications.streakRiskBody', { days: profile.streakDays }),
