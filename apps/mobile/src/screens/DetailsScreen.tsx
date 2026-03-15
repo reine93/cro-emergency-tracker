@@ -38,7 +38,7 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
 
         <View style={styles.infoGroup}>
           <AppText variant="caption" muted>
-            Time (Croatia)
+            Occured at (Local time in Croatia)
           </AppText>
           <AppText variant="body">{formatEventTimeCroatia(event.time)}</AppText>
         </View>
@@ -60,15 +60,6 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
             {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
           </AppText>
         </View>
-
-        {event.magnitudeType ? (
-          <View style={styles.infoGroup}>
-            <AppText variant="caption" muted>
-              Magnitude type
-            </AppText>
-            <AppText variant="body">{event.magnitudeType}</AppText>
-          </View>
-        ) : null}
 
         {event.authority ? (
           <View style={styles.infoGroup}>
@@ -93,7 +84,9 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
         </AppText>
       </Card>
 
-      <AppButton label="Back to list" onPress={onBack} />
+      <View style={styles.backButtonWrap}>
+        <AppButton label="Back to list" onPress={onBack} />
+      </View>
     </ScreenScaffold>
   );
 }
@@ -108,5 +101,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.brandSoft,
     padding: theme.spacing.md,
+  },
+  backButtonWrap: {
+    marginTop: theme.spacing.sm,
   },
 });
