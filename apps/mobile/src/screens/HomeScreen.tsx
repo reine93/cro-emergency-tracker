@@ -24,7 +24,16 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
     EarthquakeTimeWindow.LastMonth,
   );
   const [showWindowOptions, setShowWindowOptions] = useState(false);
-  const { items, isLoading, isRefreshing, error, refresh } = useRecentEarthquakes(timeWindow);
+  const {
+    items,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+    infoMessage,
+    lastUpdatedLabel,
+    dataSource,
+  } = useRecentEarthquakes(timeWindow);
 
   const selectedWindowLabel = useMemo(
     () =>
@@ -53,6 +62,20 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
         >
           <AppText variant="caption">{selectedWindowLabel}</AppText>
         </Pressable>
+        <AppText variant="caption" muted>
+          Polling: every 30s in dev (set EXPO_PUBLIC_POLL_MS to override)
+        </AppText>
+        {lastUpdatedLabel ? (
+          <AppText variant="caption" muted>
+            Last updated: {lastUpdatedLabel}
+            {dataSource ? ` (${dataSource})` : ''}
+          </AppText>
+        ) : null}
+        {infoMessage ? (
+          <AppText variant="caption" muted>
+            {infoMessage}
+          </AppText>
+        ) : null}
       </View>
 
       {showWindowOptions ? (
