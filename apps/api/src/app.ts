@@ -4,6 +4,10 @@ import {
   getRecentEarthquakesHandler,
   injectDebugEarthquakeHandler,
 } from './controllers/earthquakes.controller';
+import {
+  previewGamificationRemindersHandler,
+  registerExpoPushTokenHandler,
+} from './controllers/notifications.controller';
 
 export function createApp() {
   const app = express();
@@ -17,6 +21,8 @@ export function createApp() {
 
   app.get('/api/earthquakes/recent', getRecentEarthquakesHandler);
   app.post('/api/debug/earthquakes/inject', injectDebugEarthquakeHandler);
+  app.post('/api/notifications/expo/register', registerExpoPushTokenHandler);
+  app.get('/api/debug/notifications/reminders/preview', previewGamificationRemindersHandler);
 
   return app;
 }

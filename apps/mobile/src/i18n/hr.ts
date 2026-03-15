@@ -362,6 +362,10 @@ export const hr = {
     channelName: 'Upozorenja o potresima',
     checking: 'Obavijesti: provjera dozvola...',
     enabled: 'Obavijesti: uključene (min M{{magnitude}}, odgoda {{seconds}} s).',
+    remoteRegistered:
+      'Obavijesti: udaljeni push token je registriran (lokalni fallback je i dalje aktivan).',
+    remoteUnavailableLocalFallback:
+      'Obavijesti: udaljeni push nije dostupan, koristi se lokalni fallback.',
     permissionDenied: 'Obavijesti: dozvola nije odobrena.',
     unavailable: 'Obavijesti: nisu dostupne u ovom okruženju.',
     sent: 'Obavijesti: poslano za M{{magnitude}} kod {{place}}.',

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import type { EarthquakeListItem } from '../types/earthquake';
 import { useI18n } from '../i18n';
+import * as Notifications from 'expo-notifications';
 import { ensureNotificationPermission } from '../notifications/permissions';
 import {
   addNotificationResponseListener,
@@ -8,8 +10,10 @@ import {
   sendEarthquakeNotification,
   sendNotification,
 } from '../notifications/notifications.service';
+import { registerExpoPushToken } from '../api/notifications.api';
 import type { PreparednessProfile, PreparednessXpDelta } from '../gamification/preparedness.types';
 import { useNotificationPolicy } from '../notifications/policy.context';
+import { getOrCreatePushDeviceId } from '../notifications/push-registration.storage';
 
 export type NotificationRouteTarget = 'home' | 'feed' | 'tasks' | 'progress';
 export type NotificationModuleTarget = 'quiz' | 'kit' | 'home';
@@ -103,6 +107,7 @@ export function useNotificationOrchestrator({
   const lastCategorySentAtRef = useRef<Record<string, number>>({});
   const lastLevelRef = useRef(profile.level);
   const knownBadgeIdsRef = useRef<Set<string>>(new Set(profile.badges.map((badge) => badge.id)));
+  const expoPushTokenRef = useRef<string | null>(null);
 
   const minMagnitude = useMemo(() => getMinMagnitude(), []);
 
@@ -157,6 +162,68 @@ export function useNotificationOrchestrator({
       cancelled = true;
     };
   }, [minMagnitude, policy.cooldownSeconds, t]);
+
+  useEffect(() => {
+    if (!permissionGrantedRef.current) return;
+
+    let cancelled = false;
+
+    const registerRemote = async () => {
+      try {
+        let token = expoPushTokenRef.current;
+        if (!token) {
+          const tokenResult = await Notifications.getExpoPushTokenAsync();
+          token = tokenResult.data;
+          expoPushTokenRef.current = token;
+        }
+
+        const deviceId = await getOrCreatePushDeviceId();
+        if (cancelled) return;
+
+        await registerExpoPushToken({
+          deviceId,
+          expoPushToken: token,
+          platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'unknown',
+          preferences: {
+            earthquakes: policy.enabled.earthquakes,
+            dailyChallenge: policy.enabled.dailyChallenge,
+            streakAtRisk: policy.enabled.streakAtRisk,
+            badgeUnlocked: policy.enabled.badgeUnlocked,
+            levelUp: policy.enabled.levelUp,
+            earthquakeTrainingCombo: policy.enabled.earthquakeTrainingCombo,
+            quietHoursStart: policy.quietHoursStart,
+            quietHoursEnd: policy.quietHoursEnd,
+            cooldownSeconds: policy.cooldownSeconds,
+          },
+        });
+
+        if (!cancelled) {
+          setNotificationStatus(t('notifications.remoteRegistered'));
+        }
+      } catch {
+        if (!cancelled) {
+          setNotificationStatus(t('notifications.remoteUnavailableLocalFallback'));
+        }
+      }
+    };
+
+    void registerRemote();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    policy.cooldownSeconds,
+    policy.enabled.badgeUnlocked,
+    policy.enabled.dailyChallenge,
+    policy.enabled.earthquakeTrainingCombo,
+    policy.enabled.earthquakes,
+    policy.enabled.levelUp,
+    policy.enabled.streakAtRisk,
+    policy.quietHoursEnd,
+    policy.quietHoursStart,
+    t,
+  ]);
 
   useEffect(() => {
     return addNotificationResponseListener((response) => {

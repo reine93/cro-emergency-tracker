@@ -361,6 +361,9 @@ export const en = {
     channelName: 'Earthquake alerts',
     checking: 'Notifications: checking permissions...',
     enabled: 'Notifications: enabled (min M{{magnitude}}, cooldown {{seconds}}s).',
+    remoteRegistered: 'Notifications: remote push token registered (local fallback still active).',
+    remoteUnavailableLocalFallback:
+      'Notifications: remote push unavailable, using local notifications fallback.',
     permissionDenied: 'Notifications: permission not granted.',
     unavailable: 'Notifications: unavailable in this runtime.',
     sent: 'Notifications: sent for M{{magnitude}} at {{place}}.',
