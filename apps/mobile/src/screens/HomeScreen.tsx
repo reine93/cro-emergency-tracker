@@ -1,5 +1,10 @@
 import type { EarthquakeEvent } from '@cro/shared';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { EmptyState } from '../components/state/EmptyState';
+import { AppButton } from '../components/ui/AppButton';
+import { AppText } from '../components/ui/AppText';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
@@ -25,48 +30,30 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
       title="Recent Earthquakes"
       subtitle="Foundation screen for FE1. Feed cards come in FE5."
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sample event card</Text>
-        <Text style={styles.cardText}>
+      <Card>
+        <Badge label="Sample" />
+        <AppText variant="subtitle">Sample event card</AppText>
+        <AppText variant="caption" muted>
           M {sampleEvent.magnitude} · {sampleEvent.place}
-        </Text>
-        <Text style={styles.cardText}>Depth {sampleEvent.depthKm} km</Text>
-        <Pressable style={styles.button} onPress={() => onOpenDetails(sampleEvent)}>
-          <Text style={styles.buttonLabel}>Open details screen</Text>
-        </Pressable>
+        </AppText>
+        <AppText variant="caption" muted>
+          Depth {sampleEvent.depthKm} km
+        </AppText>
+        <AppButton label="Open details screen" onPress={() => onOpenDetails(sampleEvent)} />
+      </Card>
+
+      <View style={styles.statePreview}>
+        <EmptyState
+          title="No more sample items"
+          description="Loading/error states are now available as shared FE3 components."
+        />
       </View>
     </ScreenScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-    gap: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadows.card,
-  },
-  cardTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.typography.fontSizeLg,
-    fontWeight: theme.typography.fontWeightSemibold,
-  },
-  cardText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.typography.fontSizeSm,
-  },
-  button: {
-    alignSelf: 'flex-start',
-    backgroundColor: theme.colors.brand,
-    borderRadius: theme.radius.sm,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  buttonLabel: {
-    color: theme.colors.onBrand,
-    fontWeight: theme.typography.fontWeightSemibold,
+  statePreview: {
+    marginTop: theme.spacing.lg,
   },
 });

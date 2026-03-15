@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
+import { ScreenContainer } from '../components/ui/ScreenContainer';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import { theme } from '../theme/theme';
 
 type ScreenScaffoldProps = PropsWithChildren<{
@@ -10,35 +11,19 @@ type ScreenScaffoldProps = PropsWithChildren<{
 
 export function ScreenScaffold({ title, subtitle, children }: ScreenScaffoldProps) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer>
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <SectionHeader title={title} subtitle={subtitle} />
         <View style={styles.content}>{children}</View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
   container: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
     gap: theme.spacing.sm,
-  },
-  title: {
-    fontSize: theme.typography.fontSizeXl,
-    fontWeight: theme.typography.fontWeightBold,
-    color: theme.colors.textPrimary,
-  },
-  subtitle: {
-    color: theme.colors.textMuted,
-    fontSize: theme.typography.fontSizeSm,
   },
   content: {
     flex: 1,
