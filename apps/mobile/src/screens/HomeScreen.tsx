@@ -12,6 +12,7 @@ import {
   EarthquakeTimeWindow,
   useRecentEarthquakes,
 } from '../hooks/useRecentEarthquakes';
+import { useEarthquakeNotifications } from '../hooks/useEarthquakeNotifications';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
@@ -34,6 +35,7 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
     lastUpdatedLabel,
     dataSource,
   } = useRecentEarthquakes(timeWindow);
+  const { notificationStatus } = useEarthquakeNotifications({ items, dataSource });
 
   const selectedWindowLabel = useMemo(
     () =>
@@ -76,6 +78,9 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
             {infoMessage}
           </AppText>
         ) : null}
+        <AppText variant="caption" muted>
+          {notificationStatus}
+        </AppText>
       </View>
 
       {showWindowOptions ? (
