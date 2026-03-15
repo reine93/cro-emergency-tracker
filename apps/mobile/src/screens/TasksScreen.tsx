@@ -12,6 +12,15 @@ import {
   type KitItemDefinition,
 } from '../gamification/kit.logic';
 import { loadKitProgress, saveKitProgress } from '../gamification/kit.storage';
+import {
+  computeQuizResult,
+  evaluateAnswer,
+  masteredCategories,
+  xpForQuizResult,
+  type QuizCategory,
+  type QuizQuestion,
+} from '../gamification/quiz.logic';
+import { loadQuizProgress, saveQuizProgress } from '../gamification/quiz.storage';
 import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
@@ -22,6 +31,9 @@ type KitItem = KitItemDefinition & {
 };
 
 type KitModalStep = 'build' | 'result';
+type QuizModalStep = 'question' | 'feedback' | 'result';
+
+const QUIZ_START_HEARTS = 3;
 
 const KIT_ITEMS: KitItem[] = [
   {
@@ -98,6 +110,140 @@ const KIT_ITEMS: KitItem[] = [
   },
 ];
 
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'q1',
+    category: 'during_indoor',
+    promptKey: 'quiz.questions.q1.prompt',
+    options: [
+      {
+        id: 'a',
+        labelKey: 'quiz.questions.q1.a',
+        explanationKey: 'quiz.explanations.q1.a',
+        isCorrect: false,
+      },
+      {
+        id: 'b',
+        labelKey: 'quiz.questions.q1.b',
+        explanationKey: 'quiz.explanations.q1.b',
+        isCorrect: true,
+      },
+      {
+        id: 'c',
+        labelKey: 'quiz.questions.q1.c',
+        explanationKey: 'quiz.explanations.q1.c',
+        isCorrect: false,
+      },
+      {
+        id: 'd',
+        labelKey: 'quiz.questions.q1.d',
+        explanationKey: 'quiz.explanations.q1.d',
+        isCorrect: false,
+      },
+    ],
+  },
+  {
+    id: 'q2',
+    category: 'after',
+    promptKey: 'quiz.questions.q2.prompt',
+    options: [
+      {
+        id: 'a',
+        labelKey: 'quiz.questions.q2.a',
+        explanationKey: 'quiz.explanations.q2.a',
+        isCorrect: true,
+      },
+      {
+        id: 'b',
+        labelKey: 'quiz.questions.q2.b',
+        explanationKey: 'quiz.explanations.q2.b',
+        isCorrect: false,
+      },
+      {
+        id: 'c',
+        labelKey: 'quiz.questions.q2.c',
+        explanationKey: 'quiz.explanations.q2.c',
+        isCorrect: false,
+      },
+    ],
+  },
+  {
+    id: 'q3',
+    category: 'during_outdoor',
+    promptKey: 'quiz.questions.q3.prompt',
+    options: [
+      {
+        id: 'a',
+        labelKey: 'quiz.questions.q3.a',
+        explanationKey: 'quiz.explanations.q3.a',
+        isCorrect: true,
+      },
+      {
+        id: 'b',
+        labelKey: 'quiz.questions.q3.b',
+        explanationKey: 'quiz.explanations.q3.b',
+        isCorrect: false,
+      },
+      {
+        id: 'c',
+        labelKey: 'quiz.questions.q3.c',
+        explanationKey: 'quiz.explanations.q3.c',
+        isCorrect: false,
+      },
+    ],
+  },
+  {
+    id: 'q4',
+    category: 'preparedness',
+    promptKey: 'quiz.questions.q4.prompt',
+    options: [
+      {
+        id: 'a',
+        labelKey: 'quiz.questions.q4.a',
+        explanationKey: 'quiz.explanations.q4.a',
+        isCorrect: true,
+      },
+      {
+        id: 'b',
+        labelKey: 'quiz.questions.q4.b',
+        explanationKey: 'quiz.explanations.q4.b',
+        isCorrect: false,
+      },
+      {
+        id: 'c',
+        labelKey: 'quiz.questions.q4.c',
+        explanationKey: 'quiz.explanations.q4.c',
+        isCorrect: false,
+      },
+    ],
+  },
+  {
+    id: 'q5',
+    category: 'before',
+    promptKey: 'quiz.questions.q5.prompt',
+    options: [
+      {
+        id: 'a',
+        labelKey: 'quiz.questions.q5.a',
+        explanationKey: 'quiz.explanations.q5.a',
+        isCorrect: false,
+      },
+      {
+        id: 'b',
+        labelKey: 'quiz.questions.q5.b',
+        explanationKey: 'quiz.explanations.q5.b',
+        isCorrect: true,
+      },
+      {
+        id: 'c',
+        labelKey: 'quiz.questions.q5.c',
+        explanationKey: 'quiz.explanations.q5.c',
+        isCorrect: false,
+      },
+    ],
+  },
+];
+
 function categoryLabel(category: KitItemCategory, t: (key: string) => string): string {
   switch (category) {
     case 'essential':
@@ -113,26 +259,60 @@ function categoryLabel(category: KitItemCategory, t: (key: string) => string): s
   }
 }
 
+function quizCategoryLabel(category: QuizCategory, t: (key: string) => string): string {
+  return t(`quiz.categories.${category}`);
+}
+
 export function TasksScreen() {
   const { t } = useI18n();
   const { profile, addXp, updateModuleScore } = usePreparedness();
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bestScore, setBestScore] = useState<number>(0);
-  const [attempts, setAttempts] = useState(0);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalStep, setModalStep] = useState<KitModalStep>('build');
-  const [lastResult, setLastResult] = useState<ReturnType<typeof evaluateKitSelection> | null>(
-    null,
+  const [kitBestScore, setKitBestScore] = useState(0);
+  const [kitAttempts, setKitAttempts] = useState(0);
+  const [kitModalVisible, setKitModalVisible] = useState(false);
+  const [kitModalStep, setKitModalStep] = useState<KitModalStep>('build');
+  const [kitLastResult, setKitLastResult] = useState<ReturnType<
+    typeof evaluateKitSelection
+  > | null>(null);
+
+  const [quizBestScore, setQuizBestScore] = useState(0);
+  const [quizAttempts, setQuizAttempts] = useState(0);
+  const [completedQuizCategories, setCompletedQuizCategories] = useState<Set<QuizCategory>>(
+    new Set(),
   );
+  const [quizModalVisible, setQuizModalVisible] = useState(false);
+  const [quizModalStep, setQuizModalStep] = useState<QuizModalStep>('question');
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizHeartsRemaining, setQuizHeartsRemaining] = useState(QUIZ_START_HEARTS);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+  const [quizFeedback, setQuizFeedback] = useState<{
+    isCorrect: boolean;
+    explanationKey: string;
+  } | null>(null);
+  const [quizResult, setQuizResult] = useState<ReturnType<typeof computeQuizResult> | null>(null);
+  const [lastMasteredCategories, setLastMasteredCategories] = useState<QuizCategory[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      const progress = await loadKitProgress();
-      if (!progress || cancelled) return;
-      setBestScore(progress.bestScore);
-      setAttempts(progress.attempts);
+      const [kitProgress, quizProgress] = await Promise.all([
+        loadKitProgress(),
+        loadQuizProgress(),
+      ]);
+      if (cancelled) return;
+
+      if (kitProgress) {
+        setKitBestScore(kitProgress.bestScore);
+        setKitAttempts(kitProgress.attempts);
+      }
+
+      if (quizProgress) {
+        setQuizBestScore(quizProgress.bestScore);
+        setQuizAttempts(quizProgress.attempts);
+        setCompletedQuizCategories(new Set(quizProgress.completedCategories));
+      }
     };
 
     void load();
@@ -143,19 +323,19 @@ export function TasksScreen() {
   }, []);
 
   const selectedCount = selectedIds.size;
-
   const selectedItems = useMemo(
     () => KIT_ITEMS.filter((item) => selectedIds.has(item.id)),
     [selectedIds],
   );
+  const activeQuestion = QUIZ_QUESTIONS[quizIndex];
 
-  const closeModal = () => {
-    setModalVisible(false);
+  const closeKitModal = () => {
+    setKitModalVisible(false);
   };
 
-  const openBuilderModal = () => {
-    setModalStep('build');
-    setModalVisible(true);
+  const openKitModal = () => {
+    setKitModalStep('build');
+    setKitModalVisible(true);
   };
 
   const toggleItem = (id: string) => {
@@ -170,17 +350,17 @@ export function TasksScreen() {
     });
   };
 
-  const onEvaluate = async () => {
+  const onEvaluateKit = async () => {
     const result = evaluateKitSelection(KIT_ITEMS, selectedIds);
-    setLastResult(result);
-    setModalStep('result');
+    setKitLastResult(result);
+    setKitModalStep('result');
 
-    const nextAttempts = attempts + 1;
-    const improved = result.score > bestScore;
-    const nextBest = improved ? result.score : bestScore;
+    const nextAttempts = kitAttempts + 1;
+    const improved = result.score > kitBestScore;
+    const nextBest = improved ? result.score : kitBestScore;
 
-    setBestScore(nextBest);
-    setAttempts(nextAttempts);
+    setKitBestScore(nextBest);
+    setKitAttempts(nextAttempts);
 
     const xp = xpForKitScore(result.score);
     addXp(xp, 'kit_session_completed');
@@ -199,8 +379,99 @@ export function TasksScreen() {
     });
   };
 
-  const onRetry = () => {
-    setModalStep('build');
+  const onRetryKit = () => {
+    setKitModalStep('build');
+  };
+
+  const closeQuizModal = () => {
+    setQuizModalVisible(false);
+  };
+
+  const openQuizModal = () => {
+    setQuizModalVisible(true);
+    setQuizModalStep('question');
+    setQuizIndex(0);
+    setQuizHeartsRemaining(QUIZ_START_HEARTS);
+    setQuizAnswers({});
+    setQuizFeedback(null);
+    setQuizResult(null);
+    setLastMasteredCategories([]);
+  };
+
+  const onSelectQuizOption = (optionId: string) => {
+    if (quizModalStep !== 'question' || !activeQuestion) return;
+
+    const verdict = evaluateAnswer(activeQuestion, optionId);
+    const nextHearts = verdict.isCorrect
+      ? quizHeartsRemaining
+      : Math.max(0, quizHeartsRemaining - 1);
+
+    setQuizAnswers((current) => ({
+      ...current,
+      [activeQuestion.id]: optionId,
+    }));
+    setQuizHeartsRemaining(nextHearts);
+    setQuizFeedback(verdict);
+    setQuizModalStep('feedback');
+  };
+
+  const finalizeQuiz = async () => {
+    const result = computeQuizResult(
+      QUIZ_QUESTIONS,
+      quizAnswers,
+      QUIZ_START_HEARTS,
+      quizHeartsRemaining,
+    );
+    setQuizResult(result);
+    setQuizModalStep('result');
+
+    const nextAttempts = quizAttempts + 1;
+    const improved = result.percentage > quizBestScore;
+    const nextBest = improved ? result.percentage : quizBestScore;
+
+    const mastered = masteredCategories(QUIZ_QUESTIONS, quizAnswers);
+    const newlyMastered = mastered.filter((category) => !completedQuizCategories.has(category));
+    const nextCompleted = new Set([...completedQuizCategories, ...mastered]);
+
+    setQuizBestScore(nextBest);
+    setQuizAttempts(nextAttempts);
+    setCompletedQuizCategories(nextCompleted);
+    setLastMasteredCategories(newlyMastered);
+
+    const xp = xpForQuizResult(result);
+    addXp(xp, 'quiz_session_completed');
+
+    if (improved) {
+      addXp(10, 'quiz_high_score_improved');
+    }
+
+    if (newlyMastered.length) {
+      addXp(newlyMastered.length * 10, 'quiz_category_completed');
+    }
+
+    const moduleScore = Math.max(profile.moduleScores.quiz, result.percentage);
+    updateModuleScore('quiz', moduleScore, 'quiz_session_completed');
+
+    await saveQuizProgress({
+      bestScore: nextBest,
+      attempts: nextAttempts,
+      completedCategories: Array.from(nextCompleted),
+      lastPlayedAt: new Date().toISOString(),
+    });
+  };
+
+  const onContinueQuiz = () => {
+    if (quizModalStep !== 'feedback') return;
+
+    const isEnd = quizIndex >= QUIZ_QUESTIONS.length - 1;
+    if (quizHeartsRemaining <= 0 || isEnd) {
+      void finalizeQuiz();
+      return;
+    }
+
+    setQuizIndex((current) => current + 1);
+    setQuizFeedback(null);
+    setQuizModalStep('question');
   };
 
   return (
@@ -212,23 +483,45 @@ export function TasksScreen() {
             {t('kit.builderDescription')}
           </AppText>
           <View style={styles.statsRow}>
-            <Pill label={t('kit.bestScore', { score: bestScore })} />
-            <Pill label={t('kit.attempts', { count: attempts })} />
+            <Pill label={t('kit.bestScore', { score: kitBestScore })} />
+            <Pill label={t('kit.attempts', { count: kitAttempts })} />
             <Pill label={t('kit.selectedCount', { count: selectedCount })} />
           </View>
-          <AppButton label={t('kit.openBuilder')} onPress={openBuilderModal} />
+          <AppButton label={t('kit.openBuilder')} onPress={openKitModal} />
+        </Card>
+
+        <Card>
+          <AppText variant="subtitle">{t('quiz.title')}</AppText>
+          <AppText variant="caption" muted>
+            {t('quiz.description')}
+          </AppText>
+          <View style={styles.statsRow}>
+            <Pill label={t('quiz.bestScore', { score: quizBestScore })} />
+            <Pill label={t('quiz.attempts', { count: quizAttempts })} />
+            <Pill
+              label={t('quiz.categoriesCompleted', {
+                count: completedQuizCategories.size,
+              })}
+            />
+          </View>
+          <AppButton label={t('quiz.openQuiz')} onPress={openQuizModal} />
         </Card>
       </ScrollView>
 
-      <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={closeModal}>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={kitModalVisible}
+        onRequestClose={closeKitModal}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <AppText variant="subtitle">{t('kit.builderTitle')}</AppText>
-              <AppButton label={t('kit.backToTasks')} onPress={closeModal} />
+              <AppButton label={t('kit.backToTasks')} onPress={closeKitModal} />
             </View>
 
-            {modalStep === 'build' ? (
+            {kitModalStep === 'build' ? (
               <>
                 <AppText variant="caption" muted>
                   {t('kit.chooseItems')}
@@ -260,7 +553,7 @@ export function TasksScreen() {
                   <AppButton
                     label={t('kit.evaluate')}
                     onPress={() => {
-                      void onEvaluate();
+                      void onEvaluateKit();
                     }}
                     disabled={selectedCount === 0}
                     accessibilityHint={
@@ -271,23 +564,23 @@ export function TasksScreen() {
               </>
             ) : null}
 
-            {modalStep === 'result' && lastResult ? (
+            {kitModalStep === 'result' && kitLastResult ? (
               <ScrollView contentContainerStyle={styles.resultContent}>
                 <AppText variant="subtitle">
                   {t('kit.resultTitle', {
-                    score: lastResult.score,
-                    stars: lastResult.stars,
+                    score: kitLastResult.score,
+                    stars: kitLastResult.stars,
                   })}
                 </AppText>
                 <AppText variant="caption" muted>
                   {t('kit.resultMeta', {
-                    points: lastResult.points,
-                    max: lastResult.maxPoints,
-                    missed: lastResult.missedEssentialCount,
+                    points: kitLastResult.points,
+                    max: kitLastResult.maxPoints,
+                    missed: kitLastResult.missedEssentialCount,
                   })}
                 </AppText>
                 <AppText variant="caption" muted>
-                  {t('kit.xpReward', { xp: xpForKitScore(lastResult.score) })}
+                  {t('kit.xpReward', { xp: xpForKitScore(kitLastResult.score) })}
                 </AppText>
 
                 <AppText variant="subtitle">{t('kit.feedbackTitle')}</AppText>
@@ -304,7 +597,110 @@ export function TasksScreen() {
                 )}
 
                 <View style={styles.actionsRow}>
-                  <AppButton label={t('kit.retry')} onPress={onRetry} />
+                  <AppButton label={t('kit.retry')} onPress={onRetryKit} />
+                </View>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={quizModalVisible}
+        onRequestClose={closeQuizModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <AppText variant="subtitle">{t('quiz.title')}</AppText>
+              <AppButton label={t('quiz.backToTasks')} onPress={closeQuizModal} />
+            </View>
+
+            {quizModalStep === 'question' && activeQuestion ? (
+              <>
+                <View style={styles.statsRow}>
+                  <Pill
+                    label={t('quiz.questionProgress', {
+                      current: quizIndex + 1,
+                      total: QUIZ_QUESTIONS.length,
+                    })}
+                  />
+                  <Pill label={t('quiz.hearts', { value: quizHeartsRemaining })} />
+                </View>
+                <Card>
+                  <AppText variant="subtitle">{t(activeQuestion.promptKey)}</AppText>
+                  <View style={styles.optionsWrap}>
+                    {activeQuestion.options.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => onSelectQuizOption(option.id)}
+                        style={styles.optionButton}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('quiz.selectOptionA11y', {
+                          option: t(option.labelKey),
+                        })}
+                      >
+                        <AppText>{t(option.labelKey)}</AppText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Card>
+              </>
+            ) : null}
+
+            {quizModalStep === 'feedback' && quizFeedback ? (
+              <Card>
+                <AppText variant="subtitle">
+                  {quizFeedback.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {t(quizFeedback.explanationKey)}
+                </AppText>
+                <AppButton
+                  label={
+                    quizHeartsRemaining <= 0 || quizIndex >= QUIZ_QUESTIONS.length - 1
+                      ? t('quiz.finishQuiz')
+                      : t('quiz.nextQuestion')
+                  }
+                  onPress={onContinueQuiz}
+                />
+              </Card>
+            ) : null}
+
+            {quizModalStep === 'result' && quizResult ? (
+              <ScrollView contentContainerStyle={styles.resultContent}>
+                <AppText variant="subtitle">
+                  {t('quiz.resultTitle', {
+                    score: quizResult.percentage,
+                    correct: quizResult.correctCount,
+                    total: quizResult.total,
+                  })}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {t('quiz.resultMeta', {
+                    mistakes: quizResult.mistakes,
+                    hearts: quizResult.heartsRemaining,
+                  })}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {t('quiz.xpReward', { xp: xpForQuizResult(quizResult) })}
+                </AppText>
+
+                {lastMasteredCategories.length ? (
+                  <>
+                    <AppText variant="subtitle">{t('quiz.masteredTitle')}</AppText>
+                    <View style={styles.statsRow}>
+                      {lastMasteredCategories.map((category) => (
+                        <Pill key={category} label={quizCategoryLabel(category, t)} />
+                      ))}
+                    </View>
+                  </>
+                ) : null}
+
+                <View style={styles.actionsRow}>
+                  <AppButton label={t('quiz.retry')} onPress={openQuizModal} />
                 </View>
               </ScrollView>
             ) : null}
@@ -374,5 +770,18 @@ const styles = StyleSheet.create({
   resultContent: {
     gap: theme.spacing.sm,
     paddingBottom: theme.spacing.sm,
+  },
+  optionsWrap: {
+    gap: theme.spacing.xs,
+  },
+  optionButton: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
   },
 });
