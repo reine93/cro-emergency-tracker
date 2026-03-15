@@ -6,11 +6,7 @@ const ANDROID_CHANNEL_ID = 'earthquake-alerts';
 
 let configured = false;
 
-function formatMagnitude(value: number): string {
-  return Number.isFinite(value) ? value.toFixed(1) : 'n/a';
-}
-
-export async function configureNotificationService(): Promise<void> {
+export async function configureNotificationService(channelName: string): Promise<void> {
   if (configured) return;
 
   Notifications.setNotificationHandler({
@@ -24,7 +20,7 @@ export async function configureNotificationService(): Promise<void> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: 'Earthquake alerts',
+      name: channelName,
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 150, 80, 150],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -34,13 +30,12 @@ export async function configureNotificationService(): Promise<void> {
   configured = true;
 }
 
-export async function sendEarthquakeNotification(event: EarthquakeListItem): Promise<void> {
-  await configureNotificationService();
-
-  const magnitude = formatMagnitude(event.magnitude);
-  const title = `New earthquake M${magnitude}`;
-  const body = `${event.place} • ${event.formattedTime}`;
-
+export async function sendEarthquakeNotification(options: {
+  event: EarthquakeListItem;
+  title: string;
+  body: string;
+}): Promise<void> {
+  const { event, title, body } = options;
   await Notifications.scheduleNotificationAsync({
     content: {
       title,

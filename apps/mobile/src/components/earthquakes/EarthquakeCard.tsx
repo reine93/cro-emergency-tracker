@@ -1,4 +1,5 @@
 import type { EarthquakeListItem } from '../../types/earthquake';
+import { useI18n } from '../../i18n';
 import { AppButton } from '../ui/AppButton';
 import { AppText } from '../ui/AppText';
 import { Card } from '../ui/Card';
@@ -10,6 +11,8 @@ type EarthquakeCardProps = {
 };
 
 export function EarthquakeCard({ item, onOpenDetails }: EarthquakeCardProps) {
+  const { t } = useI18n();
+
   return (
     <Card>
       <Pill label={item.source} />
@@ -22,7 +25,7 @@ export function EarthquakeCard({ item, onOpenDetails }: EarthquakeCardProps) {
       <AppText variant="caption" muted>
         {item.relativeTime} · {item.depthLabel}
       </AppText>
-      <AppButton label="Details" onPress={onOpenDetails} />
+      <AppButton label={t('common.details')} onPress={onOpenDetails} />
     </Card>
   );
 }

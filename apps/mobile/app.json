@@ -30,7 +30,8 @@
           "icon": "./assets/adaptive-icon.png",
           "color": "#0B3A53"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

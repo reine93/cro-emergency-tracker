@@ -1,5 +1,6 @@
 import type { RecentEarthquakesQuery, RecentEarthquakesResponse } from '@cro/shared';
 import { requestJson } from './client';
+import type { AppLanguage, TranslateFn } from '../i18n';
 import { toEarthquakeListItem } from '../types/earthquake';
 
 function assertRecentEarthquakesResponse(
@@ -17,6 +18,8 @@ function assertRecentEarthquakesResponse(
 
 export async function getRecentEarthquakes(
   query: RecentEarthquakesQuery = {},
+  language: AppLanguage = 'en',
+  t?: TranslateFn,
 ): Promise<ReturnType<typeof toEarthquakeListItem>[]> {
   const response = await requestJson<unknown>('/api/earthquakes/recent', {
     method: 'GET',
@@ -27,5 +30,5 @@ export async function getRecentEarthquakes(
   });
 
   assertRecentEarthquakesResponse(response);
-  return response.items.map((item) => toEarthquakeListItem(item));
+  return response.items.map((item) => toEarthquakeListItem(item, { language, t }));
 }

@@ -8,11 +8,12 @@ import { AppText } from '../components/ui/AppText';
 import { Card } from '../components/ui/Card';
 import { EarthquakeCard } from '../components/earthquakes/EarthquakeCard';
 import {
-  EARTHQUAKE_TIME_WINDOW_OPTIONS,
   EarthquakeTimeWindow,
+  getEarthquakeTimeWindowOptions,
   useRecentEarthquakes,
 } from '../hooks/useRecentEarthquakes';
 import { useEarthquakeNotifications } from '../hooks/useEarthquakeNotifications';
+import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
@@ -21,6 +22,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
+  const { t } = useI18n();
   const [timeWindow, setTimeWindow] = useState<EarthquakeTimeWindow>(
     EarthquakeTimeWindow.LastMonth,
   );
@@ -36,12 +38,13 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
     dataSource,
   } = useRecentEarthquakes(timeWindow);
   const { notificationStatus } = useEarthquakeNotifications({ items, dataSource });
+  const timeWindowOptions = useMemo(() => getEarthquakeTimeWindowOptions(t), [t]);
 
   const selectedWindowLabel = useMemo(
     () =>
-      EARTHQUAKE_TIME_WINDOW_OPTIONS.find((option) => option.value === timeWindow)?.label ??
-      'Last month',
-    [timeWindow],
+      timeWindowOptions.find((option) => option.value === timeWindow)?.label ??
+      t('timeWindow.lastMonth'),
+    [t, timeWindow, timeWindowOptions],
   );
 
   const onSelectWindow = (windowValue: EarthquakeTimeWindow) => {
@@ -50,13 +53,10 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
   };
 
   return (
-    <ScreenScaffold
-      title="Recent Earthquakes"
-      subtitle="Live feed from backend with pull-to-refresh."
-    >
+    <ScreenScaffold title={t('home.title')} subtitle={t('home.subtitle')}>
       <View style={styles.filterRow}>
         <AppText variant="caption" muted>
-          Time range
+          {t('home.timeRange')}
         </AppText>
         <Pressable
           style={styles.filterButton}
@@ -65,12 +65,14 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
           <AppText variant="caption">{selectedWindowLabel}</AppText>
         </Pressable>
         <AppText variant="caption" muted>
-          Polling: every 30s in dev (set EXPO_PUBLIC_POLL_MS to override)
+          {t('home.pollingHint')}
         </AppText>
         {lastUpdatedLabel ? (
           <AppText variant="caption" muted>
-            Last updated: {lastUpdatedLabel}
-            {dataSource ? ` (${dataSource})` : ''}
+            {t('home.lastUpdated', {
+              value: lastUpdatedLabel,
+              source: dataSource === 'cache' ? t('home.sourceCache') : t('home.sourceLive'),
+            })}
           </AppText>
         ) : null}
         {infoMessage ? (
@@ -85,7 +87,7 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
 
       {showWindowOptions ? (
         <Card>
-          {EARTHQUAKE_TIME_WINDOW_OPTIONS.map((option) => {
+          {timeWindowOptions.map((option) => {
             const selected = option.value === timeWindow;
             return (
               <Pressable
@@ -102,17 +104,14 @@ export function HomeScreen({ onOpenDetails }: HomeScreenProps) {
         </Card>
       ) : null}
 
-      {isLoading ? <LoadingState message="Loading recent earthquakes..." /> : null}
+      {isLoading ? <LoadingState message={t('home.loading')} /> : null}
 
       {!isLoading && error ? (
-        <ErrorState title="Could not load earthquakes" description={error} onRetry={refresh} />
+        <ErrorState title={t('home.errorTitle')} description={error} onRetry={refresh} />
       ) : null}
 
       {!isLoading && !error && items.length === 0 ? (
-        <EmptyState
-          title="No earthquakes found"
-          description="Try another time range or pull to refresh."
-        />
+        <EmptyState title={t('home.emptyTitle')} description={t('home.emptyDescription')} />
       ) : null}
 
       {!isLoading && !error && items.length > 0 ? (

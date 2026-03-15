@@ -1,11 +1,15 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { AppText } from '../components/ui/AppText';
+import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
 export function TasksScreen() {
+  const { t } = useI18n();
+
   return (
-    <ScreenScaffold title="Preparedness Tasks" subtitle="Placeholder for FE1">
-      <Text style={styles.message}>Task system starts in later frontend tasks.</Text>
+    <ScreenScaffold title={t('tasks.title')} subtitle={t('tasks.subtitle')}>
+      <AppText style={styles.message}>{t('tasks.message')}</AppText>
     </ScreenScaffold>
   );
 }

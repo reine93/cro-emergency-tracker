@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useI18n } from '../../i18n';
 import { theme } from '../../theme/theme';
 import { AppButton } from '../ui/AppButton';
 import { AppText } from '../ui/AppText';
@@ -9,18 +10,18 @@ type ErrorStateProps = {
   onRetry?: () => void;
 };
 
-export function ErrorState({
-  title = 'Something went wrong',
-  description = 'Please try again.',
-  onRetry,
-}: ErrorStateProps) {
+export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t('state.errorTitle');
+  const resolvedDescription = description ?? t('state.errorDescription');
+
   return (
     <View style={styles.container}>
-      <AppText variant="subtitle">{title}</AppText>
+      <AppText variant="subtitle">{resolvedTitle}</AppText>
       <AppText variant="caption" muted>
-        {description}
+        {resolvedDescription}
       </AppText>
-      {onRetry ? <AppButton label="Retry" onPress={onRetry} /> : null}
+      {onRetry ? <AppButton label={t('common.retry')} onPress={onRetry} /> : null}
     </View>
   );
 }

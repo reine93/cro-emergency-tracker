@@ -4,9 +4,10 @@ import { AppButton } from '../components/ui/AppButton';
 import { AppText } from '../components/ui/AppText';
 import { Card } from '../components/ui/Card';
 import { Pill } from '../components/ui/Pill';
+import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
-import { formatEventTimeCroatia } from '../types/earthquake';
+import { formatEventTimeCroatia, localizePlaceName } from '../types/earthquake';
 
 type DetailsScreenProps = {
   event: EarthquakeEvent;
@@ -14,47 +15,49 @@ type DetailsScreenProps = {
 };
 
 export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
-  const isOutsideCroatia = !event.place.toUpperCase().includes('CROATIA');
+  const { t, language } = useI18n();
+  const localizedPlace = localizePlaceName(event.place, language);
+  const isOutsideCroatia = !localizedPlace.toUpperCase().includes('HRVATSKA');
   const feltImpactHint =
-    event.magnitude >= 4
-      ? 'Higher-magnitude cross-border event. It may be felt in parts of Croatia.'
-      : 'Cross-border event. It may be felt in Croatia depending on distance and local conditions.';
+    event.magnitude >= 4 ? t('details.feltImpactHigh') : t('details.feltImpactNormal');
 
   return (
-    <ScreenScaffold title="Event Details" subtitle="Informational only · not an EEW alert">
+    <ScreenScaffold title={t('details.title')} subtitle={t('details.subtitle')}>
       <Card>
         <Pill label={event.source} />
         <AppText variant="subtitle">M {event.magnitude}</AppText>
         <AppText variant="caption" muted>
-          Magnitude indicates the estimated energy release of the earthquake.
+          {t('details.magnitudeHint')}
         </AppText>
 
         <View style={styles.infoGroup}>
           <AppText variant="caption" muted>
-            Place
+            {t('details.placeLabel')}
           </AppText>
-          <AppText variant="body">{event.place || 'Unknown place'}</AppText>
+          <AppText variant="body">{localizedPlace || t('common.unknownPlace')}</AppText>
         </View>
 
         <View style={styles.infoGroup}>
           <AppText variant="caption" muted>
-            Occured at (Local time in Croatia)
-          </AppText>
-          <AppText variant="body">{formatEventTimeCroatia(event.time)}</AppText>
-        </View>
-
-        <View style={styles.infoGroup}>
-          <AppText variant="caption" muted>
-            Depth
+            {t('details.occurredLabel')}
           </AppText>
           <AppText variant="body">
-            {event.depthKm !== undefined ? `${event.depthKm} km` : 'n/a'}
+            {formatEventTimeCroatia(event.time, language, t('common.unknownTime'))}
           </AppText>
         </View>
 
         <View style={styles.infoGroup}>
           <AppText variant="caption" muted>
-            Coordinates
+            {t('details.depthLabel')}
+          </AppText>
+          <AppText variant="body">
+            {event.depthKm !== undefined ? `${event.depthKm} km` : t('common.na')}
+          </AppText>
+        </View>
+
+        <View style={styles.infoGroup}>
+          <AppText variant="caption" muted>
+            {t('details.coordinatesLabel')}
           </AppText>
           <AppText variant="body">
             {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
@@ -64,7 +67,7 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
         {event.authority ? (
           <View style={styles.infoGroup}>
             <AppText variant="caption" muted>
-              Reported by
+              {t('details.reportedByLabel')}
             </AppText>
             <AppText variant="body">{event.authority}</AppText>
           </View>
@@ -79,13 +82,12 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
 
       <Card>
         <AppText variant="caption" muted>
-          This information supports awareness and preparedness only. Follow official civil
-          protection guidance for emergency actions.
+          {t('details.disclaimer')}
         </AppText>
       </Card>
 
       <View style={styles.backButtonWrap}>
-        <AppButton label="Back to list" onPress={onBack} />
+        <AppButton label={t('details.backToList')} onPress={onBack} />
       </View>
     </ScreenScaffold>
   );

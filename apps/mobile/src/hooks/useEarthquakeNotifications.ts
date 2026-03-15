@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EarthquakeListItem } from '../types/earthquake';
+import { useI18n } from '../i18n';
 import { ensureNotificationPermission } from '../notifications/permissions';
 import {
   configureNotificationService,
@@ -42,9 +43,8 @@ export function useEarthquakeNotifications({
   items,
   dataSource,
 }: UseEarthquakeNotificationsParams): UseEarthquakeNotificationsResult {
-  const [notificationStatus, setNotificationStatus] = useState(
-    'Notifications: checking permissions...',
-  );
+  const { t } = useI18n();
+  const [notificationStatus, setNotificationStatus] = useState(t('notifications.checking'));
   const hasInitializedIdsRef = useRef(false);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const permissionGrantedRef = useRef(false);
@@ -58,24 +58,27 @@ export function useEarthquakeNotifications({
 
     const setup = async () => {
       try {
-        await configureNotificationService();
+        await configureNotificationService(t('notifications.channelName'));
         const permission = await ensureNotificationPermission();
         if (cancelled) return;
 
         if (permission === 'granted') {
           permissionGrantedRef.current = true;
           setNotificationStatus(
-            `Notifications: enabled (min M${minMagnitude.toFixed(1)}, cooldown ${Math.round(cooldownMs / 1000)}s).`,
+            t('notifications.enabled', {
+              magnitude: minMagnitude.toFixed(1),
+              seconds: Math.round(cooldownMs / 1000),
+            }),
           );
           return;
         }
 
         permissionGrantedRef.current = false;
-        setNotificationStatus('Notifications: permission not granted.');
+        setNotificationStatus(t('notifications.permissionDenied'));
       } catch {
         permissionGrantedRef.current = false;
         if (!cancelled) {
-          setNotificationStatus('Notifications: unavailable in this runtime.');
+          setNotificationStatus(t('notifications.unavailable'));
         }
       }
     };
@@ -85,7 +88,7 @@ export function useEarthquakeNotifications({
     return () => {
       cancelled = true;
     };
-  }, [cooldownMs, minMagnitude]);
+  }, [cooldownMs, minMagnitude, t]);
 
   useEffect(() => {
     if (!items.length) return;
@@ -117,17 +120,24 @@ export function useEarthquakeNotifications({
     }
 
     const newest = [...relevant].sort((a, b) => b.timeIso.localeCompare(a.timeIso))[0];
-    void sendEarthquakeNotification(newest)
+    void sendEarthquakeNotification({
+      event: newest,
+      title: t('notifications.alertTitle', { magnitude: newest.magnitude.toFixed(1) }),
+      body: t('notifications.alertBody', { place: newest.place, time: newest.formattedTime }),
+    })
       .then(() => {
         lastNotificationAtRef.current = now;
         setNotificationStatus(
-          `Notifications: sent for M${newest.magnitude.toFixed(1)} at ${newest.place}.`,
+          t('notifications.sent', {
+            magnitude: newest.magnitude.toFixed(1),
+            place: newest.place,
+          }),
         );
       })
       .catch(() => {
-        setNotificationStatus('Notifications: failed to schedule local alert.');
+        setNotificationStatus(t('notifications.failed'));
       });
-  }, [cooldownMs, dataSource, items, minMagnitude]);
+  }, [cooldownMs, dataSource, items, minMagnitude, t]);
 
   return { notificationStatus };
 }

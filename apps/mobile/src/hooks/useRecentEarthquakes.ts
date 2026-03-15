@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import { ApiRequestError } from '../api/client';
 import type { EarthquakeListItem } from '../types/earthquake';
 import { formatEventTimeCroatia, toEarthquakeListItem } from '../types/earthquake';
 import { getRecentEarthquakes } from '../api/earthquakes.api';
+import type { TranslateFn } from '../i18n';
+import { useI18n } from '../i18n';
 import {
   loadEarthquakesCache,
   loadLatestEarthquakesCache,
@@ -17,16 +20,18 @@ export enum EarthquakeTimeWindow {
   LastSixMonths = 'LAST_SIX_MONTHS',
 }
 
-export const EARTHQUAKE_TIME_WINDOW_OPTIONS: Array<{
+export function getEarthquakeTimeWindowOptions(t: TranslateFn): Array<{
   value: EarthquakeTimeWindow;
   label: string;
-}> = [
-  { value: EarthquakeTimeWindow.Last24Hours, label: 'Last 24 hours' },
-  { value: EarthquakeTimeWindow.LastWeek, label: 'Last week' },
-  { value: EarthquakeTimeWindow.LastTwoWeeks, label: 'Last two weeks' },
-  { value: EarthquakeTimeWindow.LastMonth, label: 'Last month' },
-  { value: EarthquakeTimeWindow.LastSixMonths, label: 'Last six months' },
-];
+}> {
+  return [
+    { value: EarthquakeTimeWindow.Last24Hours, label: t('timeWindow.last24Hours') },
+    { value: EarthquakeTimeWindow.LastWeek, label: t('timeWindow.lastWeek') },
+    { value: EarthquakeTimeWindow.LastTwoWeeks, label: t('timeWindow.lastTwoWeeks') },
+    { value: EarthquakeTimeWindow.LastMonth, label: t('timeWindow.lastMonth') },
+    { value: EarthquakeTimeWindow.LastSixMonths, label: t('timeWindow.lastSixMonths') },
+  ];
+}
 
 export function toHours(window: EarthquakeTimeWindow): number {
   switch (window) {
@@ -72,7 +77,31 @@ function getPollIntervalMs(): number {
   return isDev ? DEV_POLL_INTERVAL_MS : DEFAULT_POLL_INTERVAL_MS;
 }
 
+function toLocalizedFetchError(error: unknown, t: TranslateFn): string {
+  if (error instanceof ApiRequestError) {
+    switch (error.kind) {
+      case 'timeout':
+        return t('errors.timeout');
+      case 'network':
+        return t('errors.network');
+      case 'parse':
+        return t('errors.parse');
+      case 'http':
+        return t('errors.generic');
+      default:
+        return t('errors.generic');
+    }
+  }
+
+  if (error instanceof Error && error.message.toLowerCase().includes('invalid response shape')) {
+    return t('errors.invalidShape');
+  }
+
+  return t('errors.generic');
+}
+
 export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecentEarthquakesResult {
+  const { language, t } = useI18n();
   const [items, setItems] = useState<EarthquakeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -101,15 +130,21 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
       setInfoMessage(null);
 
       try {
-        const data = await getRecentEarthquakes({
-          hours: toHours(timeWindow),
-          minMag: 2.5,
-        });
+        const data = await getRecentEarthquakes(
+          {
+            hours: toHours(timeWindow),
+            minMag: 2.5,
+          },
+          language,
+          t,
+        );
         setItems(data);
         setDataSource('live');
         setInfoMessage(null);
         const updatedAtIso = new Date().toISOString();
-        setLastUpdatedLabel(formatEventTimeCroatia(updatedAtIso));
+        setLastUpdatedLabel(
+          formatEventTimeCroatia(updatedAtIso, language, t('common.unknownTime')),
+        );
         lastSuccessRef.current = { items: data, updatedAtIso };
         sessionLastSuccess = { items: data, updatedAtIso };
         await saveEarthquakesCache(
@@ -122,30 +157,50 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
         const fallback = byWindow ?? latest;
 
         if (fallback) {
-          const mapped = fallback.events.map((event) => toEarthquakeListItem(event));
+          const mapped = fallback.events.map((event) =>
+            toEarthquakeListItem(event, { language, t }),
+          );
           setItems(mapped);
           setDataSource('cache');
-          setLastUpdatedLabel(formatEventTimeCroatia(fallback.updatedAtIso));
-          setInfoMessage('Showing cached data (offline fallback).');
+          setLastUpdatedLabel(
+            formatEventTimeCroatia(fallback.updatedAtIso, language, t('common.unknownTime')),
+          );
+          setInfoMessage(t('data.cachedFallback'));
           setError(null);
           lastSuccessRef.current = { items: mapped, updatedAtIso: fallback.updatedAtIso };
           sessionLastSuccess = { items: mapped, updatedAtIso: fallback.updatedAtIso };
         } else if (lastSuccessRef.current) {
-          setItems(lastSuccessRef.current.items);
+          const remapped = lastSuccessRef.current.items.map((item) =>
+            toEarthquakeListItem(item.raw, { language, t }),
+          );
+          setItems(remapped);
           setDataSource('cache');
-          setLastUpdatedLabel(formatEventTimeCroatia(lastSuccessRef.current.updatedAtIso));
-          setInfoMessage('Showing last in-memory data (offline fallback).');
+          setLastUpdatedLabel(
+            formatEventTimeCroatia(
+              lastSuccessRef.current.updatedAtIso,
+              language,
+              t('common.unknownTime'),
+            ),
+          );
+          setInfoMessage(t('data.memoryFallback'));
           setError(null);
         } else if (sessionLastSuccess) {
-          setItems(sessionLastSuccess.items);
+          const remapped = sessionLastSuccess.items.map((item) =>
+            toEarthquakeListItem(item.raw, { language, t }),
+          );
+          setItems(remapped);
           setDataSource('cache');
-          setLastUpdatedLabel(formatEventTimeCroatia(sessionLastSuccess.updatedAtIso));
-          setInfoMessage('Showing session fallback data (offline).');
+          setLastUpdatedLabel(
+            formatEventTimeCroatia(
+              sessionLastSuccess.updatedAtIso,
+              language,
+              t('common.unknownTime'),
+            ),
+          );
+          setInfoMessage(t('data.sessionFallback'));
           setError(null);
         } else {
-          setError(
-            fetchError instanceof Error ? fetchError.message : 'Failed to fetch earthquakes.',
-          );
+          setError(toLocalizedFetchError(fetchError, t));
         }
       } finally {
         setIsLoading(false);
@@ -153,7 +208,7 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
         isFetchingRef.current = false;
       }
     },
-    [timeWindow],
+    [language, t, timeWindow],
   );
 
   useEffect(() => {

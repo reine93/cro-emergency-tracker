@@ -7,11 +7,13 @@ import { ProgressScreen } from '../screens/ProgressScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { theme } from '../theme/theme';
+import { useI18n } from '../i18n';
 import type { AppNavigatorState, MainTab } from './types';
 
 const tabs: MainTab[] = ['Home', 'Tasks', 'Progress', 'Settings'];
 
 export function AppNavigator() {
+  const { t } = useI18n();
   const [state, setState] = useState<AppNavigatorState>({
     activeTab: 'Home',
     selectedEarthquake: null,
@@ -27,6 +29,13 @@ export function AppNavigator() {
 
   const goBackFromDetails = () => {
     setState((prev) => ({ ...prev, selectedEarthquake: null }));
+  };
+
+  const tabLabels: Record<MainTab, string> = {
+    Home: t('tabs.home'),
+    Tasks: t('tabs.tasks'),
+    Progress: t('tabs.progress'),
+    Settings: t('tabs.settings'),
   };
 
   const screen = useMemo(() => {
@@ -61,7 +70,9 @@ export function AppNavigator() {
               onPress={() => goToTab(tab)}
               style={[styles.tabButton, active ? styles.tabButtonActive : null]}
             >
-              <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>{tab}</Text>
+              <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>
+                {tabLabels[tab]}
+              </Text>
             </Pressable>
           );
         })}
