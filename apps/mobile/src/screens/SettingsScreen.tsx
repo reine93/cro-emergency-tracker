@@ -5,11 +5,21 @@ import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
-export function SettingsScreen() {
+type SettingsScreenProps = {
+  onClose: () => void;
+};
+
+export function SettingsScreen({ onClose }: SettingsScreenProps) {
   const { language, setLanguage, t } = useI18n();
 
   return (
-    <ScreenScaffold title={t('settings.title')} subtitle={t('settings.subtitle')}>
+    <ScreenScaffold
+      title={t('settings.title')}
+      subtitle={t('settings.subtitle')}
+      onOpenSettings={onClose}
+      settingsA11yLabel={t('settings.close')}
+      settingsIconLabel="✕"
+    >
       <Card>
         <AppText variant="subtitle">{t('settings.languageLabel')}</AppText>
         <AppText variant="caption" muted>

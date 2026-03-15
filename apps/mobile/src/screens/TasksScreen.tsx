@@ -333,7 +333,11 @@ function homeCategoryLabel(category: HomeSafetyCategory, t: (key: string) => str
   return t(`homeSafety.categories.${category}`);
 }
 
-export function TasksScreen() {
+type TasksScreenProps = {
+  onOpenSettings: () => void;
+};
+
+export function TasksScreen({ onOpenSettings }: TasksScreenProps) {
   const { t } = useI18n();
   const { profile, addXp, updateModuleScore } = usePreparedness();
 
@@ -619,7 +623,12 @@ export function TasksScreen() {
   };
 
   return (
-    <ScreenScaffold title={t('tasks.title')} subtitle={t('tasks.subtitle')}>
+    <ScreenScaffold
+      title={t('tasks.title')}
+      subtitle={t('tasks.subtitle')}
+      onOpenSettings={onOpenSettings}
+      settingsA11yLabel={t('settings.open')}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card>
           <AppText variant="subtitle">{t('kit.builderTitle')}</AppText>
