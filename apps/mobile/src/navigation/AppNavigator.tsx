@@ -1,8 +1,15 @@
 import type { EarthquakeEvent } from '@cro/shared';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/ui/AppText';
+import {
+  type NotificationModuleTarget,
+  type NotificationRouteTarget,
+  useNotificationOrchestrator,
+} from '../hooks/useNotificationOrchestrator';
+import { EarthquakeTimeWindow, useRecentEarthquakes } from '../hooks/useRecentEarthquakes';
 import { useI18n } from '../i18n';
+import { usePreparedness } from '../gamification/preparedness.context';
 import { DetailsScreen } from '../screens/DetailsScreen';
 import { FeedScreen } from '../screens/FeedScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -20,6 +27,40 @@ export function AppNavigator() {
     activeTab: 'Home',
     selectedEarthquake: null,
     settingsOpen: false,
+    taskModuleIntent: null,
+  });
+  const { items: globalItems, dataSource: globalDataSource } = useRecentEarthquakes(
+    EarthquakeTimeWindow.LastMonth,
+  );
+  const { profile, lastXpDelta } = usePreparedness();
+
+  const onNavigateFromNotification = useCallback(
+    (target: { route: NotificationRouteTarget; module?: NotificationModuleTarget }) => {
+      const routeToTab: Record<NotificationRouteTarget, MainTab> = {
+        home: 'Home',
+        feed: 'Feed',
+        tasks: 'Tasks',
+        progress: 'Progress',
+      };
+      const activeTab = routeToTab[target.route];
+
+      setState((prev) => ({
+        ...prev,
+        activeTab,
+        selectedEarthquake: null,
+        settingsOpen: false,
+        taskModuleIntent: activeTab === 'Tasks' ? (target.module ?? null) : null,
+      }));
+    },
+    [],
+  );
+
+  const { notificationStatus } = useNotificationOrchestrator({
+    items: globalItems,
+    dataSource: globalDataSource,
+    profile,
+    lastXpDelta,
+    onNavigateFromNotification,
   });
 
   const goToTab = (tab: MainTab) => {
@@ -28,6 +69,7 @@ export function AppNavigator() {
       activeTab: tab,
       selectedEarthquake: null,
       settingsOpen: false,
+      taskModuleIntent: null,
     }));
   };
 
@@ -45,6 +87,7 @@ export function AppNavigator() {
       activeTab: 'Tasks',
       selectedEarthquake: null,
       settingsOpen: false,
+      taskModuleIntent: null,
     }));
   };
 
@@ -54,6 +97,7 @@ export function AppNavigator() {
       activeTab: 'Progress',
       selectedEarthquake: null,
       settingsOpen: false,
+      taskModuleIntent: null,
     }));
   };
 
@@ -63,11 +107,17 @@ export function AppNavigator() {
       activeTab: 'Feed',
       selectedEarthquake: null,
       settingsOpen: false,
+      taskModuleIntent: null,
     }));
   };
 
   const openSettings = () => {
-    setState((prev) => ({ ...prev, settingsOpen: true, selectedEarthquake: null }));
+    setState((prev) => ({
+      ...prev,
+      settingsOpen: true,
+      selectedEarthquake: null,
+      taskModuleIntent: null,
+    }));
   };
 
   const closeSettings = () => {
@@ -98,18 +148,43 @@ export function AppNavigator() {
             onOpenProgressHub={openProgressHub}
             onOpenFeed={openFeed}
             onOpenSettings={openSettings}
+            notificationStatus={notificationStatus}
           />
         );
       case 'Feed':
-        return <FeedScreen onOpenDetails={openDetails} onOpenSettings={openSettings} />;
+        return (
+          <FeedScreen
+            onOpenDetails={openDetails}
+            onOpenSettings={openSettings}
+            notificationStatus={notificationStatus}
+          />
+        );
       case 'Tasks':
-        return <TasksScreen onOpenSettings={openSettings} />;
+        return (
+          <TasksScreen
+            onOpenSettings={openSettings}
+            moduleIntent={state.taskModuleIntent}
+            onConsumedModuleIntent={() => setState((prev) => ({ ...prev, taskModuleIntent: null }))}
+          />
+        );
       case 'Progress':
-        return <ProgressScreen onOpenTasks={openTasks} onOpenSettings={openSettings} />;
+        return (
+          <ProgressScreen
+            onOpenTasks={openTasks}
+            onOpenSettings={openSettings}
+            notificationStatus={notificationStatus}
+          />
+        );
       default:
         return null;
     }
-  }, [state.activeTab, state.selectedEarthquake, state.settingsOpen]);
+  }, [
+    notificationStatus,
+    state.activeTab,
+    state.selectedEarthquake,
+    state.settingsOpen,
+    state.taskModuleIntent,
+  ]);
 
   return (
     <View style={styles.root}>

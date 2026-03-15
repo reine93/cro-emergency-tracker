@@ -34,8 +34,9 @@ export async function sendEarthquakeNotification(options: {
   event: EarthquakeListItem;
   title: string;
   body: string;
+  data?: Record<string, unknown>;
 }): Promise<void> {
-  const { event, title, body } = options;
+  const { event, title, body, data } = options;
   await Notifications.scheduleNotificationAsync({
     content: {
       title,
@@ -44,9 +45,36 @@ export async function sendEarthquakeNotification(options: {
         earthquakeId: event.id,
         magnitude: event.magnitude,
         place: event.place,
+        ...data,
       },
       sound: false,
     },
     trigger: null,
   });
+}
+
+export async function sendNotification(options: {
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+}): Promise<void> {
+  const { title, body, data } = options;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data,
+      sound: false,
+    },
+    trigger: null,
+  });
+}
+
+export function addNotificationResponseListener(
+  onResponse: (response: Notifications.NotificationResponse) => void,
+): () => void {
+  const subscription = Notifications.addNotificationResponseReceivedListener(onResponse);
+  return () => {
+    subscription.remove();
+  };
 }

@@ -31,6 +31,7 @@ function isDebugActionsEnabled(): boolean {
 type ProgressScreenProps = {
   onOpenTasks: () => void;
   onOpenSettings: () => void;
+  notificationStatus: string;
 };
 
 type AchievementItem = {
@@ -96,7 +97,11 @@ function isSameUtcDay(leftIso: string | null, rightIso: string): boolean {
   );
 }
 
-export function ProgressScreen({ onOpenTasks, onOpenSettings }: ProgressScreenProps) {
+export function ProgressScreen({
+  onOpenTasks,
+  onOpenSettings,
+  notificationStatus,
+}: ProgressScreenProps) {
   const { t } = useI18n();
   const { profile, lastXpDelta, completeDailyAction, addXp, updateModuleScore } = usePreparedness();
   const progressPct = Math.max(
@@ -215,6 +220,9 @@ export function ProgressScreen({ onOpenTasks, onOpenSettings }: ProgressScreenPr
             onPress={completeDailyAction}
             disabled={dailyDone}
           />
+          <AppText variant="caption" muted>
+            {notificationStatus}
+          </AppText>
         </Card>
 
         {showDebugActions ? (

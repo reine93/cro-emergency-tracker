@@ -32,6 +32,7 @@ import { loadQuizProgress, saveQuizProgress } from '../gamification/quiz.storage
 import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
+import type { NotificationModuleTarget } from '../hooks/useNotificationOrchestrator';
 
 type KitItem = KitItemDefinition & {
   labelKey: string;
@@ -335,9 +336,15 @@ function homeCategoryLabel(category: HomeSafetyCategory, t: (key: string) => str
 
 type TasksScreenProps = {
   onOpenSettings: () => void;
+  moduleIntent?: NotificationModuleTarget | null;
+  onConsumedModuleIntent?: () => void;
 };
 
-export function TasksScreen({ onOpenSettings }: TasksScreenProps) {
+export function TasksScreen({
+  onOpenSettings,
+  moduleIntent = null,
+  onConsumedModuleIntent,
+}: TasksScreenProps) {
   const { t } = useI18n();
   const { profile, addXp, updateModuleScore } = usePreparedness();
 
@@ -573,6 +580,22 @@ export function TasksScreen({ onOpenSettings }: TasksScreenProps) {
     setHomeModalVisible(true);
     setHomeModalStep('checklist');
   };
+
+  useEffect(() => {
+    if (!moduleIntent) return;
+
+    const timer = setTimeout(() => {
+      if (moduleIntent === 'kit') openKitModal();
+      if (moduleIntent === 'quiz') openQuizModal();
+      if (moduleIntent === 'home') openHomeModal();
+
+      onConsumedModuleIntent?.();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [moduleIntent, onConsumedModuleIntent]);
 
   const toggleHomeItem = (id: string) => {
     setCompletedHomeIds((current) => {

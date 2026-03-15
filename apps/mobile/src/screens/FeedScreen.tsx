@@ -12,7 +12,6 @@ import {
   getEarthquakeTimeWindowOptions,
   useRecentEarthquakes,
 } from '../hooks/useRecentEarthquakes';
-import { useEarthquakeNotifications } from '../hooks/useEarthquakeNotifications';
 import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
@@ -20,9 +19,10 @@ import { theme } from '../theme/theme';
 type FeedScreenProps = {
   onOpenDetails: (event: EarthquakeEvent) => void;
   onOpenSettings: () => void;
+  notificationStatus: string;
 };
 
-export function FeedScreen({ onOpenDetails, onOpenSettings }: FeedScreenProps) {
+export function FeedScreen({ onOpenDetails, onOpenSettings, notificationStatus }: FeedScreenProps) {
   const { t } = useI18n();
   const [timeWindow, setTimeWindow] = useState<EarthquakeTimeWindow>(
     EarthquakeTimeWindow.LastMonth,
@@ -38,7 +38,6 @@ export function FeedScreen({ onOpenDetails, onOpenSettings }: FeedScreenProps) {
     lastUpdatedLabel,
     dataSource,
   } = useRecentEarthquakes(timeWindow);
-  const { notificationStatus } = useEarthquakeNotifications({ items, dataSource });
   const timeWindowOptions = useMemo(() => getEarthquakeTimeWindowOptions(t), [t]);
 
   const selectedWindowLabel = useMemo(
