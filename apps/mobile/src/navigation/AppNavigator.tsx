@@ -55,7 +55,7 @@ export function AppNavigator() {
     [],
   );
 
-  const { notificationStatus } = useNotificationOrchestrator({
+  useNotificationOrchestrator({
     items: globalItems,
     dataSource: globalDataSource,
     profile,
@@ -130,6 +130,12 @@ export function AppNavigator() {
     Tasks: t('tabs.tasks'),
     Progress: t('tabs.progress'),
   };
+  const tabIcons: Record<MainTab, string> = {
+    Home: '🏠',
+    Feed: '🌋',
+    Tasks: '🎯',
+    Progress: '⭐',
+  };
 
   const screen = useMemo(() => {
     if (state.selectedEarthquake) {
@@ -148,17 +154,10 @@ export function AppNavigator() {
             onOpenProgressHub={openProgressHub}
             onOpenFeed={openFeed}
             onOpenSettings={openSettings}
-            notificationStatus={notificationStatus}
           />
         );
       case 'Feed':
-        return (
-          <FeedScreen
-            onOpenDetails={openDetails}
-            onOpenSettings={openSettings}
-            notificationStatus={notificationStatus}
-          />
-        );
+        return <FeedScreen onOpenDetails={openDetails} onOpenSettings={openSettings} />;
       case 'Tasks':
         return (
           <TasksScreen
@@ -168,49 +167,53 @@ export function AppNavigator() {
           />
         );
       case 'Progress':
-        return (
-          <ProgressScreen
-            onOpenTasks={openTasks}
-            onOpenSettings={openSettings}
-            notificationStatus={notificationStatus}
-          />
-        );
+        return <ProgressScreen onOpenTasks={openTasks} onOpenSettings={openSettings} />;
       default:
         return null;
     }
-  }, [
-    notificationStatus,
-    state.activeTab,
-    state.selectedEarthquake,
-    state.settingsOpen,
-    state.taskModuleIntent,
-  ]);
+  }, [state.activeTab, state.selectedEarthquake, state.settingsOpen, state.taskModuleIntent]);
 
   return (
     <View style={styles.root}>
       <View style={styles.screenContainer}>{screen}</View>
       {!state.settingsOpen ? (
-        <View style={styles.tabBar} accessibilityRole="tablist">
-          {tabs.map((tab) => {
-            const active = state.activeTab === tab && !state.selectedEarthquake;
-            return (
-              <Pressable
-                key={tab}
-                accessibilityRole="tab"
-                accessibilityLabel={t('a11y.navigation.openTab', { tab: tabLabels[tab] })}
-                accessibilityState={{ selected: active }}
-                onPress={() => goToTab(tab)}
-                style={[styles.tabButton, active ? styles.tabButtonActive : null]}
-              >
-                <AppText
-                  variant="caption"
-                  style={[styles.tabLabel, active ? styles.tabLabelActive : null]}
+        <View style={styles.tabDock}>
+          <View pointerEvents="none" style={styles.topFade}>
+            <View style={[styles.fadeStep, { opacity: 0.08 }]} />
+            <View style={[styles.fadeStep, { opacity: 0.16 }]} />
+            <View style={[styles.fadeStep, { opacity: 0.24 }]} />
+            <View style={[styles.fadeStep, { opacity: 0.32 }]} />
+          </View>
+          <View style={styles.tabBar} accessibilityRole="tablist">
+            {tabs.map((tab) => {
+              const active = state.activeTab === tab && !state.selectedEarthquake;
+              return (
+                <Pressable
+                  key={tab}
+                  accessibilityRole="tab"
+                  accessibilityLabel={t('a11y.navigation.openTab', { tab: tabLabels[tab] })}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => goToTab(tab)}
+                  style={[styles.tabButton, active ? styles.tabButtonActive : null]}
                 >
-                  {tabLabels[tab]}
-                </AppText>
-              </Pressable>
-            );
-          })}
+                  <View style={styles.tabLabelWrap}>
+                    <AppText
+                      variant="caption"
+                      style={[styles.tabEmoji, active ? styles.tabLabelActive : null]}
+                    >
+                      {tabIcons[tab]}
+                    </AppText>
+                    <AppText
+                      variant="caption"
+                      style={[styles.tabLabel, active ? styles.tabLabelActive : null]}
+                    >
+                      {tabLabels[tab]}
+                    </AppText>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       ) : null}
     </View>
@@ -225,29 +228,68 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
   },
+  tabDock: {
+    position: 'relative',
+    backgroundColor: theme.colors.surface,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.md,
+  },
+  topFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -40,
+    height: 40,
+  },
+  fadeStep: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   tabBar: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.lg,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.sm,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.sm,
     gap: theme.spacing.sm,
+    ...theme.shadows.card,
   },
   tabButton: {
     flex: 1,
     borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: theme.colors.background,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 52,
   },
   tabButtonActive: {
+    borderColor: theme.colors.brand,
     backgroundColor: theme.colors.brandSoft,
+    ...theme.shadows.card,
   },
   tabLabel: {
-    color: theme.colors.textMuted,
+    color: theme.colors.textSecondary,
     fontWeight: theme.typography.fontWeightMedium,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  tabLabelWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  tabEmoji: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.fontSizeMd,
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   tabLabelActive: {
     color: theme.colors.brand,

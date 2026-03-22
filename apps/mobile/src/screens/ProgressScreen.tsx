@@ -21,17 +21,9 @@ function getLevelTitle(level: number): string {
   return LEVEL_TITLES[level - 1] ?? `Level ${level}`;
 }
 
-function isDebugActionsEnabled(): boolean {
-  const raw = process.env.EXPO_PUBLIC_ENABLE_GAMIFICATION_DEBUG_ACTIONS?.trim().toLowerCase();
-  if (raw === 'true') return true;
-  if (raw === 'false') return false;
-  return process.env.NODE_ENV !== 'production';
-}
-
 type ProgressScreenProps = {
   onOpenTasks: () => void;
   onOpenSettings: () => void;
-  notificationStatus: string;
 };
 
 type AchievementItem = {
@@ -97,18 +89,13 @@ function isSameUtcDay(leftIso: string | null, rightIso: string): boolean {
   );
 }
 
-export function ProgressScreen({
-  onOpenTasks,
-  onOpenSettings,
-  notificationStatus,
-}: ProgressScreenProps) {
+export function ProgressScreen({ onOpenTasks, onOpenSettings }: ProgressScreenProps) {
   const { t } = useI18n();
-  const { profile, lastXpDelta, completeDailyAction, addXp, updateModuleScore } = usePreparedness();
+  const { profile, lastXpDelta, completeDailyAction } = usePreparedness();
   const progressPct = Math.max(
     0,
     Math.min(100, Math.round((profile.currentLevelXp / profile.nextLevelXp) * 100)),
   );
-  const showDebugActions = isDebugActionsEnabled();
   const dailyDone = isSameUtcDay(profile.lastActivityAt, new Date().toISOString());
 
   const achievements = [
@@ -166,6 +153,20 @@ export function ProgressScreen({
         </Card>
 
         <Card>
+          <AppText variant="subtitle">{t('progress.dailyChallengeTitle')}</AppText>
+          <AppText variant="caption" muted>
+            {t('progress.dailyChallengeDescription')}
+          </AppText>
+          <AppButton
+            label={
+              dailyDone ? t('progress.dailyChallengeCompleted') : t('progress.dailyChallengeAction')
+            }
+            onPress={completeDailyAction}
+            disabled={dailyDone}
+          />
+        </Card>
+
+        <Card>
           <AppText variant="subtitle">{t('progress.moduleScoresTitle')}</AppText>
           <Card>
             <AppText variant="subtitle">{t('progress.modules.quiz')}</AppText>
@@ -207,58 +208,6 @@ export function ProgressScreen({
             <AppButton label={t('progress.openInTasks')} onPress={onOpenTasks} />
           </Card>
         </Card>
-
-        <Card>
-          <AppText variant="subtitle">{t('progress.dailyChallengeTitle')}</AppText>
-          <AppText variant="caption" muted>
-            {t('progress.dailyChallengeDescription')}
-          </AppText>
-          <AppButton
-            label={
-              dailyDone ? t('progress.dailyChallengeCompleted') : t('progress.dailyChallengeAction')
-            }
-            onPress={completeDailyAction}
-            disabled={dailyDone}
-          />
-          <AppText variant="caption" muted>
-            {notificationStatus}
-          </AppText>
-        </Card>
-
-        {showDebugActions ? (
-          <Card>
-            <AppText variant="subtitle">{t('progress.actionsTitle')}</AppText>
-            <View style={styles.actionsRow}>
-              <AppButton label={t('progress.actions.daily')} onPress={completeDailyAction} />
-              <AppButton
-                label={t('progress.actions.quizBoost')}
-                onPress={() => {
-                  const next = Math.min(100, profile.moduleScores.quiz + 10);
-                  updateModuleScore('quiz', next, 'quiz_score_update');
-                  addXp(10, 'quiz_practice');
-                }}
-              />
-            </View>
-            <View style={styles.actionsRow}>
-              <AppButton
-                label={t('progress.actions.kitBoost')}
-                onPress={() => {
-                  const next = Math.min(100, profile.moduleScores.kit + 10);
-                  updateModuleScore('kit', next, 'kit_score_update');
-                  addXp(10, 'kit_practice');
-                }}
-              />
-              <AppButton
-                label={t('progress.actions.homeBoost')}
-                onPress={() => {
-                  const next = Math.min(100, profile.moduleScores.home + 10);
-                  updateModuleScore('home', next, 'home_score_update');
-                  addXp(10, 'home_practice');
-                }}
-              />
-            </View>
-          </Card>
-        ) : null}
 
         {lastXpDelta ? (
           <Card>
@@ -316,10 +265,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
   },
 });

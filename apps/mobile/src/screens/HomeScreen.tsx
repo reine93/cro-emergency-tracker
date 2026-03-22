@@ -18,7 +18,6 @@ type HomeScreenProps = {
   onOpenFeed: () => void;
   onOpenProgressHub: () => void;
   onOpenSettings: () => void;
-  notificationStatus: string;
 };
 
 export function HomeScreen({
@@ -26,7 +25,6 @@ export function HomeScreen({
   onOpenFeed,
   onOpenProgressHub,
   onOpenSettings,
-  notificationStatus,
 }: HomeScreenProps) {
   const { profile } = usePreparedness();
   const { t, language } = useI18n();
@@ -68,9 +66,6 @@ export function HomeScreen({
               <AppText>{t('homeDashboard.openFeed')}</AppText>
             </Pressable>
           </View>
-          <AppText variant="caption" muted>
-            {notificationStatus}
-          </AppText>
         </Card>
 
         <Card>

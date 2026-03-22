@@ -1,11 +1,10 @@
 import type { EarthquakeEvent } from '@cro/shared';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, Modal, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/state/EmptyState';
 import { ErrorState } from '../components/state/ErrorState';
 import { LoadingState } from '../components/state/LoadingState';
 import { AppText } from '../components/ui/AppText';
-import { Card } from '../components/ui/Card';
 import { EarthquakeCard } from '../components/earthquakes/EarthquakeCard';
 import {
   EarthquakeTimeWindow,
@@ -19,11 +18,11 @@ import { theme } from '../theme/theme';
 type FeedScreenProps = {
   onOpenDetails: (event: EarthquakeEvent) => void;
   onOpenSettings: () => void;
-  notificationStatus: string;
 };
 
-export function FeedScreen({ onOpenDetails, onOpenSettings, notificationStatus }: FeedScreenProps) {
+export function FeedScreen({ onOpenDetails, onOpenSettings }: FeedScreenProps) {
   const { t } = useI18n();
+  const isDevEnvironment = process.env.NODE_ENV !== 'production';
   const [timeWindow, setTimeWindow] = useState<EarthquakeTimeWindow>(
     EarthquakeTimeWindow.LastMonth,
   );
@@ -61,20 +60,7 @@ export function FeedScreen({ onOpenDetails, onOpenSettings, notificationStatus }
     >
       <View style={styles.filterRow}>
         <AppText variant="caption" muted>
-          {t('home.timeRange')}
-        </AppText>
-        <Pressable
-          style={styles.filterButton}
-          onPress={() => setShowWindowOptions((value) => !value)}
-          accessibilityRole="button"
-          accessibilityLabel={t('a11y.home.timeRangeButton')}
-          accessibilityHint={t('a11y.home.timeRangeButtonHint')}
-          accessibilityState={{ expanded: showWindowOptions }}
-        >
-          <AppText variant="caption">{selectedWindowLabel}</AppText>
-        </Pressable>
-        <AppText variant="caption" muted>
-          {t('home.pollingHint')}
+          {isDevEnvironment ? t('home.pollingHintDev') : t('home.pollingHintProd')}
         </AppText>
         {lastUpdatedLabel ? (
           <AppText variant="caption" muted>
@@ -89,32 +75,64 @@ export function FeedScreen({ onOpenDetails, onOpenSettings, notificationStatus }
             {infoMessage}
           </AppText>
         ) : null}
-        <AppText variant="caption" muted>
-          {notificationStatus}
-        </AppText>
+        <Pressable
+          style={styles.filterButton}
+          onPress={() => setShowWindowOptions(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.home.timeRangeButton')}
+          accessibilityHint={t('a11y.home.timeRangeButtonHint')}
+          accessibilityState={{ expanded: showWindowOptions }}
+        >
+          <AppText variant="caption" style={styles.filterButtonIcon}>
+            ⏱
+          </AppText>
+          <AppText variant="caption" style={styles.filterButtonLabel}>
+            {selectedWindowLabel}
+          </AppText>
+        </Pressable>
       </View>
 
-      {showWindowOptions ? (
-        <Card>
-          {timeWindowOptions.map((option) => {
-            const selected = option.value === timeWindow;
-            return (
+      <Modal
+        visible={showWindowOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowWindowOptions(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <AppText variant="subtitle">{t('home.timeRange')}</AppText>
               <Pressable
-                key={option.value}
-                onPress={() => onSelectWindow(option.value)}
-                style={[styles.optionButton, selected ? styles.optionButtonSelected : null]}
+                onPress={() => setShowWindowOptions(false)}
+                style={styles.modalCloseButton}
                 accessibilityRole="button"
-                accessibilityLabel={t('a11y.home.selectTimeRangeOption', { option: option.label })}
-                accessibilityState={{ selected }}
+                accessibilityLabel={t('settings.close')}
               >
-                <AppText variant="caption" muted={!selected}>
-                  {option.label}
-                </AppText>
+                <AppText variant="caption">✕</AppText>
               </Pressable>
-            );
-          })}
-        </Card>
-      ) : null}
+            </View>
+            {timeWindowOptions.map((option) => {
+              const selected = option.value === timeWindow;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => onSelectWindow(option.value)}
+                  style={[styles.optionButton, selected ? styles.optionButtonSelected : null]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('a11y.home.selectTimeRangeOption', {
+                    option: option.label,
+                  })}
+                  accessibilityState={{ selected }}
+                >
+                  <AppText variant="caption" muted={!selected}>
+                    {option.label}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
 
       {isLoading ? <LoadingState message={t('home.loading')} /> : null}
 
@@ -155,24 +173,69 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     alignSelf: 'flex-start',
-    borderRadius: theme.radius.md,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: '#f2b39f',
+    backgroundColor: '#ffe7dc',
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
     justifyContent: 'center',
+    ...theme.shadows.card,
+  },
+  filterButtonLabel: {
+    color: theme.colors.brand,
+    fontWeight: theme.typography.fontWeightSemibold,
+  },
+  filterButtonIcon: {
+    color: theme.colors.brand,
   },
   optionButton: {
     borderRadius: theme.radius.md,
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     minHeight: 44,
+    borderWidth: 1,
+    borderColor: 'transparent',
     justifyContent: 'center',
   },
   optionButtonSelected: {
     backgroundColor: theme.colors.brandSoft,
+    borderColor: theme.colors.brand,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(31, 22, 24, 0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    ...theme.shadows.card,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xs,
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff3eb',
   },
   listContent: {
     gap: theme.spacing.md,
