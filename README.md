@@ -1,62 +1,66 @@
-# 🇭🇷 Cro Emergency Tracker
+# Cro Emergency Tracker
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Cro Emergency Tracker is a monorepo with a mobile app and backend API for earthquake awareness and preparedness in Croatia.
 
-A mobile app (React Native + Expo) designed to help users in Croatia prepare for and respond to emergencies such as earthquakes.  
-The app will include features like real-time alerts, safety checklists, and gamified preparedness tasks.
+The app is informational. It does not provide earthquake prediction or official emergency warning.
 
----
+## What is in this repo
 
-## 🚧 Project Status
+- `apps/mobile`: React Native app (Expo)
+- `apps/api`: Node.js + Express API
+- `packages/shared`: shared types used across mobile and API
 
-This repository is in early development. The monorepo wiring (mobile app + API + shared package) is in place and ready
-for feature work.
+## Current app structure
 
----
+The mobile app currently includes:
 
-## 📱 Planned Features
+- Home dashboard
+- Earthquake feed with filtering and refresh
+- Earthquake details screen
+- Preparedness tasks
+- Progress hub (gamification)
+- Settings (language and notification preferences)
 
-- Real-time earthquake and emergency alerts
-- Preparedness checklists and safety guides
-- Gamified learning (points, badges, daily challenges)
-- Localized Croatian/English support
+The backend currently includes:
 
----
+- Health endpoint
+- Earthquake ingestion from external seismic source(s)
+- Mapping to internal domain model
+- Croatia-focused relevance filtering
+- Notification-related endpoints for registration/debug flows
+- Analytics summary/export endpoints for evaluation
 
-## 🛠️ Tech Stack
+## Tech stack
 
-- **React Native** (Expo)
-- **Node.js / Express** (for API integration, planned)
-- **Seismic APIs** for real-time data
-- **CodeRabbit** for automated code review
+- React Native + Expo
+- Node.js + Express
+- TypeScript
+- Vitest
+- npm workspaces
 
----
+## Requirements
 
-## ⚙️ Setup
-
-### Prerequisites
-
-- Node.js (LTS recommended)
+- Node.js LTS
 - npm
-- For mobile development: Expo Go on your device, or Android Studio / Xcode simulators
+- Expo Go or iOS/Android simulator for mobile testing
 
-### Install
+## Install
 
-From the repo root:
+From repo root:
 
 ```bash
 npm install
 ```
 
-### Run (Mobile)
+## Run
+
+Mobile:
 
 ```bash
 npm run dev:mobile
 ```
 
-Then use the Expo CLI menu to open iOS/Android/Web.
-
-### Run (API)
+API:
 
 ```bash
 npm run dev:api
@@ -66,17 +70,118 @@ Health check:
 
 - `GET http://localhost:8080/health`
 
-### Lint / Typecheck / Tests
+## Simulate a debug earthquake event
+
+Use this when you want to test feed updates and notification behavior without waiting for real events.
+
+1. Start API and mobile in separate terminals.
+
+```bash
+npm run dev:api
+npm run dev:mobile
+```
+
+2. Make sure mobile points to your API.
+
+- Default API base URL is `http://localhost:8080`.
+- For a real phone, set `EXPO_PUBLIC_API_BASE_URL` to your machine IP, for example:
+  `http://192.168.1.20:8080`.
+
+3. Send a POST request to the debug endpoint.
+
+- URL: `http://localhost:8080/api/debug/earthquakes/inject`
+- Method: `POST`
+- Headers:
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+- Body fields (all optional):
+  - `magnitude` (number)
+  - `time` (ISO string)
+  - `depthKm` (number)
+  - `latitude` (number)
+  - `longitude` (number)
+  - `place` (string)
+  - `authority` (string)
+  - `ttlMinutes` (number, must be > 0)
+
+Example payload:
+
+```json
+{
+  "magnitude": 4.8,
+  "time": "2026-03-22T12:30:00.000Z",
+  "depthKm": 12,
+  "latitude": 45.815,
+  "longitude": 15.982,
+  "place": "ZAGREB (DEBUG)",
+  "authority": "DEBUG",
+  "ttlMinutes": 30
+}
+```
+
+Example with curl:
+
+```bash
+curl -X POST "http://localhost:8080/api/debug/earthquakes/inject" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "magnitude": 4.8,
+    "time": "2026-03-22T12:30:00.000Z",
+    "depthKm": 12,
+    "latitude": 45.815,
+    "longitude": 15.982,
+    "place": "ZAGREB (DEBUG)",
+    "authority": "DEBUG",
+    "ttlMinutes": 30
+  }'
+```
+
+4. What to observe in mobile:
+
+- Feed: a new event appears after polling or pull-to-refresh.
+- Home: latest earthquakes section shows the event (if it is among latest 3).
+- Notifications: if enabled and not blocked by quiet hours/cooldown, a local notification is triggered for relevant new events.
+- Event details: opening the card shows injected values (magnitude, place, depth, time, coordinates).
+
+Notes:
+
+- Debug inject endpoint is disabled in production (`404` when `NODE_ENV=production`).
+- Injected events expire automatically based on `ttlMinutes`.
+
+## Test commands
+
+Run API tests:
+
+```bash
+npm run test:api
+```
+
+Run mobile tests:
+
+```bash
+npm run test:mobile
+```
+
+Run both:
+
+```bash
+npm run test:all
+```
+
+## Lint and typecheck
 
 ```bash
 npm run lint
 npm run typecheck:api
-npm run test:api
 ```
 
----
+## Notes
 
-## 🪪 License
+- Mobile test files are under `apps/mobile/tests`.
+- API test files are under `apps/api/tests`.
+- Some notification behavior differs between Expo Go and development builds, especially on Android.
 
-This project is open-source under the [MIT License](LICENSE).  
-Feel free to use, modify, and share with attribution.
+## License
+
+MIT. See [LICENSE](LICENSE).
