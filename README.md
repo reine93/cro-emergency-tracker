@@ -54,16 +54,16 @@ npm install
 
 ## Run
 
-Mobile:
-
-```bash
-npm run dev:mobile
-```
-
-API:
+Start the API first, in terminal 1:
 
 ```bash
 npm run dev:api
+```
+
+Then start mobile in a separate terminal (terminal 2):
+
+```bash
+npm run dev:mobile
 ```
 
 Health check:
