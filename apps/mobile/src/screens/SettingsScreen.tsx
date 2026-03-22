@@ -1,12 +1,11 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { AppButton } from '../components/ui/AppButton';
 import { AppText } from '../components/ui/AppText';
 import { Card } from '../components/ui/Card';
 import { useI18n } from '../i18n';
-import {
-  getCooldownPresets,
-  getQuietHourPresets,
-  useNotificationPolicy,
-} from '../notifications/policy.context';
+import { resolveQuietHoursApply } from '../notifications/quiet-hours.logic';
+import { getCooldownPresets, useNotificationPolicy } from '../notifications/policy.context';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 
@@ -18,7 +17,33 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
   const { language, setLanguage, t } = useI18n();
   const { policy, setCategoryEnabled, setCooldownSeconds, setQuietHours } = useNotificationPolicy();
   const cooldownPresets = getCooldownPresets();
-  const quietPresets = getQuietHourPresets();
+  const [quietStartInput, setQuietStartInput] = useState('');
+  const [quietEndInput, setQuietEndInput] = useState('');
+  const [quietHoursError, setQuietHoursError] = useState<string | null>(null);
+
+  const formattedQuietRange = t('settings.quietHoursOption', {
+    start: String(policy.quietHoursStart).padStart(2, '0'),
+    end: String(policy.quietHoursEnd).padStart(2, '0'),
+  });
+
+  const applyQuietHours = () => {
+    const result = resolveQuietHoursApply(
+      quietStartInput,
+      quietEndInput,
+      policy.quietHoursStart,
+      policy.quietHoursEnd,
+    );
+
+    if (!result.ok) {
+      setQuietHoursError(t('settings.quietHoursInvalid'));
+      return;
+    }
+
+    setQuietHours(result.start, result.end);
+    setQuietHoursError(null);
+    setQuietStartInput('');
+    setQuietEndInput('');
+  };
 
   return (
     <ScreenScaffold
@@ -118,28 +143,48 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
           </View>
 
           <AppText variant="subtitle">{t('settings.quietHoursLabel')}</AppText>
-          <View style={styles.languageRow}>
-            {quietPresets.map((preset) => {
-              const selected =
-                policy.quietHoursStart === preset.start && policy.quietHoursEnd === preset.end;
-              return (
-                <Pressable
-                  key={`${preset.start}-${preset.end}`}
-                  style={[styles.langButton, selected ? styles.langButtonActive : null]}
-                  onPress={() => setQuietHours(preset.start, preset.end)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <AppText variant="caption">
-                    {t('settings.quietHoursOption', {
-                      start: String(preset.start).padStart(2, '0'),
-                      end: String(preset.end).padStart(2, '0'),
-                    })}
-                  </AppText>
-                </Pressable>
-              );
-            })}
+          <AppText variant="caption" muted>
+            {t('settings.quietHoursCurrent', { value: formattedQuietRange })}
+          </AppText>
+          <View style={styles.quietHoursRow}>
+            <View style={styles.quietHoursInputWrap}>
+              <AppText variant="caption" muted>
+                {t('settings.quietHoursStartLabel')}
+              </AppText>
+              <TextInput
+                value={quietStartInput}
+                onChangeText={setQuietStartInput}
+                keyboardType="number-pad"
+                maxLength={2}
+                placeholder={String(policy.quietHoursStart).padStart(2, '0')}
+                style={styles.hourInput}
+                accessibilityLabel={t('settings.quietHoursStartLabel')}
+              />
+            </View>
+            <View style={styles.quietHoursInputWrap}>
+              <AppText variant="caption" muted>
+                {t('settings.quietHoursEndLabel')}
+              </AppText>
+              <TextInput
+                value={quietEndInput}
+                onChangeText={setQuietEndInput}
+                keyboardType="number-pad"
+                maxLength={2}
+                placeholder={String(policy.quietHoursEnd).padStart(2, '0')}
+                style={styles.hourInput}
+                accessibilityLabel={t('settings.quietHoursEndLabel')}
+              />
+            </View>
           </View>
+          <AppText variant="caption" muted>
+            {t('settings.quietHoursInputHint')}
+          </AppText>
+          {quietHoursError ? (
+            <AppText variant="caption" style={styles.errorText}>
+              {quietHoursError}
+            </AppText>
+          ) : null}
+          <AppButton label={t('settings.quietHoursApply')} onPress={applyQuietHours} />
         </Card>
       </ScrollView>
     </ScreenScaffold>
@@ -186,5 +231,26 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: theme.spacing.md,
     paddingBottom: theme.spacing.xl,
+  },
+  quietHoursRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  quietHoursInputWrap: {
+    flex: 1,
+    gap: theme.spacing.xs,
+  },
+  hourInput: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    minHeight: 44,
+    paddingHorizontal: theme.spacing.md,
+    color: theme.colors.textPrimary,
+  },
+  errorText: {
+    color: '#c23d33',
   },
 });
