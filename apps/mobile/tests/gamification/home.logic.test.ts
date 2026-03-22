@@ -5,7 +5,7 @@ import {
   toRiskTier,
   xpForHomeSafetyScore,
   type HomeSafetyItem,
-} from './home.logic';
+} from '../../src/gamification/home.logic';
 
 const ITEMS: HomeSafetyItem[] = [
   { id: 'secure_shelves', category: 'furniture', weight: 20 },
@@ -47,5 +47,15 @@ describe('home safety helpers', () => {
     expect(xpForHomeSafetyScore(80)).toBe(35);
     expect(xpForHomeSafetyScore(65)).toBe(25);
     expect(xpForHomeSafetyScore(30)).toBe(15);
+  });
+
+  it('handles empty datasets and recommendation limits defensively', () => {
+    const evaluation = evaluateHomeSafety([], new Set());
+    expect(evaluation.score).toBe(0);
+    expect(evaluation.totalWeight).toBe(0);
+    expect(evaluation.riskTier).toBe('high');
+
+    const noRecommendations = topHomeSafetyRecommendations(ITEMS, new Set(), -10);
+    expect(noRecommendations).toEqual([]);
   });
 });

@@ -75,6 +75,87 @@ describe('registerExpoPushTokenHandler', () => {
       message: 'Invalid push registration payload',
     });
   });
+
+  it('returns 400 for invalid platform value', () => {
+    const req = {
+      body: {
+        deviceId: 'device-1',
+        expoPushToken: 'ExponentPushToken[test]',
+        platform: 'web',
+        preferences: {
+          earthquakes: true,
+          dailyChallenge: true,
+          streakAtRisk: true,
+          badgeUnlocked: true,
+          levelUp: true,
+          earthquakeTrainingCombo: true,
+          quietHoursStart: 22,
+          quietHoursEnd: 7,
+          cooldownSeconds: 120,
+        },
+      },
+    } as unknown as Request;
+    const res = createResponseMock();
+
+    registerExpoPushTokenHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Invalid push registration payload',
+    });
+  });
+
+  it('returns 400 when quiet hour is out of range', () => {
+    const req = {
+      body: {
+        deviceId: 'device-1',
+        expoPushToken: 'ExponentPushToken[test]',
+        platform: 'ios',
+        preferences: {
+          earthquakes: true,
+          dailyChallenge: true,
+          streakAtRisk: true,
+          badgeUnlocked: true,
+          levelUp: true,
+          earthquakeTrainingCombo: true,
+          quietHoursStart: 24,
+          quietHoursEnd: 7,
+          cooldownSeconds: 120,
+        },
+      },
+    } as unknown as Request;
+    const res = createResponseMock();
+
+    registerExpoPushTokenHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('returns 400 when cooldownSeconds is not positive', () => {
+    const req = {
+      body: {
+        deviceId: 'device-1',
+        expoPushToken: 'ExponentPushToken[test]',
+        platform: 'ios',
+        preferences: {
+          earthquakes: true,
+          dailyChallenge: true,
+          streakAtRisk: true,
+          badgeUnlocked: true,
+          levelUp: true,
+          earthquakeTrainingCombo: true,
+          quietHoursStart: 22,
+          quietHoursEnd: 7,
+          cooldownSeconds: 0,
+        },
+      },
+    } as unknown as Request;
+    const res = createResponseMock();
+
+    registerExpoPushTokenHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
 });
 
 describe('previewGamificationRemindersHandler', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveAppLanguageFromLocale } from './language';
+import { resolveAppLanguageFromLocale } from '../../src/i18n/language';
 
 describe('resolveAppLanguageFromLocale', () => {
   it('returns hr when languageCode is hr', () => {

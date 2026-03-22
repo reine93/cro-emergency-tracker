@@ -5,7 +5,7 @@ import {
   masteredCategories,
   xpForQuizResult,
   type QuizQuestion,
-} from './quiz.logic';
+} from '../../src/gamification/quiz.logic';
 
 const QUESTIONS: QuizQuestion[] = [
   {
@@ -50,6 +50,12 @@ describe('computeQuizResult', () => {
     expect(result.percentage).toBe(50);
     expect(result.mistakes).toBe(1);
   });
+
+  it('clamps heartsRemaining at zero when negative', () => {
+    const result = computeQuizResult(QUESTIONS, { q1: 'a' }, 3, -2);
+    expect(result.heartsRemaining).toBe(0);
+    expect(result.mistakes).toBe(5);
+  });
 });
 
 describe('xp and category mastery', () => {
@@ -78,5 +84,22 @@ describe('xp and category mastery', () => {
     const answers = { q1: 'a', q2: 'b' };
     const mastered = masteredCategories(QUESTIONS, answers);
     expect(mastered).toEqual(['during_indoor', 'after']);
+  });
+
+  it('does not mark category as mastered if any question in category is wrong or missing', () => {
+    const questions: QuizQuestion[] = [
+      ...QUESTIONS,
+      {
+        id: 'q3',
+        category: 'during_indoor',
+        promptKey: 'quiz.questions.q3.prompt',
+        options: [
+          { id: 'a', labelKey: 'a', explanationKey: 'x', isCorrect: false },
+          { id: 'b', labelKey: 'b', explanationKey: 'y', isCorrect: true },
+        ],
+      },
+    ];
+    const mastered = masteredCategories(questions, { q1: 'a', q2: 'b' });
+    expect(mastered).toEqual(['after']);
   });
 });
