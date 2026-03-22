@@ -43,20 +43,24 @@ const styles = StyleSheet.create({
   button: {
     alignSelf: 'flex-start',
     backgroundColor: theme.colors.brand,
-    borderRadius: theme.radius.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#f25e4f',
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
     gap: theme.spacing.xs,
+    ...theme.shadows.card,
   },
   label: {
     color: theme.colors.onBrand,
   },
   buttonDisabled: {
-    backgroundColor: theme.colors.border,
+    backgroundColor: '#f3d1c1',
+    borderColor: '#e5c0b1',
   },
   labelDisabled: {
     color: theme.colors.textMuted,

@@ -17,6 +17,7 @@ export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
 
   return (
     <View style={styles.container}>
+      <AppText variant="subtitle">🛟</AppText>
       <AppText variant="subtitle">{resolvedTitle}</AppText>
       <AppText variant="caption" muted>
         {resolvedDescription}
@@ -29,10 +30,10 @@ export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#f3b8b0',
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#fff2f0',
     gap: theme.spacing.sm,
   },
 });

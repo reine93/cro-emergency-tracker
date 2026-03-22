@@ -2,14 +2,14 @@ import type { AppTheme } from './types';
 
 export const lightThemeTokens: AppTheme = {
   colors: {
-    background: '#f6f8fb',
-    surface: '#ffffff',
-    border: '#d7dce5',
-    textPrimary: '#122033',
-    textSecondary: '#33445c',
-    textMuted: '#4f5d75',
-    brand: '#1d5fd1',
-    brandSoft: '#e9f0ff',
+    background: '#fff5ee',
+    surface: '#fffdf9',
+    border: '#f1c9b2',
+    textPrimary: '#35282a',
+    textSecondary: '#634a4f',
+    textMuted: '#7f6870',
+    brand: '#ff6f61',
+    brandSoft: '#ffe2dc',
     onBrand: '#ffffff',
   },
   typography: {
@@ -31,17 +31,17 @@ export const lightThemeTokens: AppTheme = {
     xl: 24,
   },
   radius: {
-    sm: 8,
-    md: 10,
-    lg: 12,
+    sm: 10,
+    md: 14,
+    lg: 18,
   },
   shadows: {
     card: {
-      shadowColor: '#0b1a33',
+      shadowColor: '#71312a',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 2,
+      shadowOpacity: 0.14,
+      shadowRadius: 10,
+      elevation: 3,
     },
   },
 };

@@ -1,5 +1,5 @@
 import type { EarthquakeEvent } from '@cro/shared';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppButton } from '../components/ui/AppButton';
 import { AppText } from '../components/ui/AppText';
 import { Card } from '../components/ui/Card';
@@ -23,81 +23,87 @@ export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
 
   return (
     <ScreenScaffold title={t('details.title')} subtitle={t('details.subtitle')}>
-      <Card>
-        <Pill label={event.source} />
-        <AppText variant="subtitle">M {event.magnitude}</AppText>
-        <AppText variant="caption" muted>
-          {t('details.magnitudeHint')}
-        </AppText>
-
-        <View style={styles.infoGroup}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Card>
+          <Pill label={event.source} />
+          <AppText variant="subtitle">M {event.magnitude}</AppText>
           <AppText variant="caption" muted>
-            {t('details.placeLabel')}
+            {t('details.magnitudeHint')}
           </AppText>
-          <AppText variant="body">{localizedPlace || t('common.unknownPlace')}</AppText>
-        </View>
 
-        <View style={styles.infoGroup}>
-          <AppText variant="caption" muted>
-            {t('details.occurredLabel')}
-          </AppText>
-          <AppText variant="body">
-            {formatEventTimeCroatia(event.time, language, t('common.unknownTime'))}
-          </AppText>
-        </View>
-
-        <View style={styles.infoGroup}>
-          <AppText variant="caption" muted>
-            {t('details.depthLabel')}
-          </AppText>
-          <AppText variant="body">
-            {event.depthKm !== undefined ? `${event.depthKm} km` : t('common.na')}
-          </AppText>
-        </View>
-
-        <View style={styles.infoGroup}>
-          <AppText variant="caption" muted>
-            {t('details.coordinatesLabel')}
-          </AppText>
-          <AppText variant="body">
-            {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
-          </AppText>
-        </View>
-
-        {event.authority ? (
           <View style={styles.infoGroup}>
             <AppText variant="caption" muted>
-              {t('details.reportedByLabel')}
+              {t('details.placeLabel')}
             </AppText>
-            <AppText variant="body">{event.authority}</AppText>
+            <AppText variant="body">{localizedPlace || t('common.unknownPlace')}</AppText>
           </View>
-        ) : null}
 
-        {isOutsideCroatia ? (
-          <View style={styles.banner}>
-            <AppText variant="caption">{feltImpactHint}</AppText>
+          <View style={styles.infoGroup}>
+            <AppText variant="caption" muted>
+              {t('details.occurredLabel')}
+            </AppText>
+            <AppText variant="body">
+              {formatEventTimeCroatia(event.time, language, t('common.unknownTime'))}
+            </AppText>
           </View>
-        ) : null}
-      </Card>
 
-      <Card>
-        <AppText variant="caption" muted>
-          {t('details.disclaimer')}
-        </AppText>
-      </Card>
+          <View style={styles.infoGroup}>
+            <AppText variant="caption" muted>
+              {t('details.depthLabel')}
+            </AppText>
+            <AppText variant="body">
+              {event.depthKm !== undefined ? `${event.depthKm} km` : t('common.na')}
+            </AppText>
+          </View>
 
-      <View style={styles.backButtonWrap}>
-        <AppButton
-          label={t('details.backToList')}
-          onPress={onBack}
-          accessibilityLabel={t('a11y.details.backToList')}
-        />
-      </View>
+          <View style={styles.infoGroup}>
+            <AppText variant="caption" muted>
+              {t('details.coordinatesLabel')}
+            </AppText>
+            <AppText variant="body">
+              {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
+            </AppText>
+          </View>
+
+          {event.authority ? (
+            <View style={styles.infoGroup}>
+              <AppText variant="caption" muted>
+                {t('details.reportedByLabel')}
+              </AppText>
+              <AppText variant="body">{event.authority}</AppText>
+            </View>
+          ) : null}
+
+          {isOutsideCroatia ? (
+            <View style={styles.banner}>
+              <AppText variant="caption">{feltImpactHint}</AppText>
+            </View>
+          ) : null}
+        </Card>
+
+        <Card>
+          <AppText variant="caption" muted>
+            {t('details.disclaimer')}
+          </AppText>
+        </Card>
+
+        <View style={styles.backButtonWrap}>
+          <AppButton
+            label={t('details.backToList')}
+            onPress={onBack}
+            accessibilityLabel={t('a11y.details.backToList')}
+          />
+        </View>
+      </ScrollView>
     </ScreenScaffold>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+  },
   infoGroup: {
     gap: theme.spacing.xs,
   },

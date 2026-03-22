@@ -18,7 +18,9 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.brandSoft,
+    backgroundColor: '#ffe9a8',
+    borderWidth: 1,
+    borderColor: '#f1cc58',
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
   },

@@ -14,6 +14,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    borderTopWidth: 3,
+    borderTopColor: theme.colors.brand,
     ...theme.shadows.card,
   },
 });

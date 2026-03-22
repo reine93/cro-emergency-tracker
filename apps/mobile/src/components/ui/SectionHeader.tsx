@@ -28,6 +28,11 @@ export function SectionHeader({ title, subtitle, rightAction }: SectionHeaderPro
 const styles = StyleSheet.create({
   container: {
     gap: theme.spacing.xs,
+    backgroundColor: '#fff0e8',
+    borderWidth: 1,
+    borderColor: '#f3cfbe',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
   },
   topRow: {
     flexDirection: 'row',

@@ -12,6 +12,7 @@ export function LoadingState({ message }: LoadingStateProps) {
 
   return (
     <View style={styles.container}>
+      <AppText variant="subtitle">🌍</AppText>
       <ActivityIndicator color={theme.colors.brand} />
       <AppText variant="caption" muted>
         {message || t('common.loading')}
@@ -22,6 +23,10 @@ export function LoadingState({ message }: LoadingStateProps) {
 
 const styles = StyleSheet.create({
   container: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#fff7ef',
     paddingVertical: theme.spacing.xl,
     alignItems: 'center',
     gap: theme.spacing.sm,

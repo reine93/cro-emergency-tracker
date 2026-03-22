@@ -10,6 +10,7 @@ type EmptyStateProps = {
 export function EmptyState({ title, description }: EmptyStateProps) {
   return (
     <View style={styles.container}>
+      <AppText variant="subtitle">📦</AppText>
       <AppText variant="subtitle">{title}</AppText>
       {description ? (
         <AppText variant="caption" muted>
@@ -23,10 +24,10 @@ export function EmptyState({ title, description }: EmptyStateProps) {
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#f3cfbe',
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#fff8f2',
     gap: theme.spacing.xs,
   },
 });

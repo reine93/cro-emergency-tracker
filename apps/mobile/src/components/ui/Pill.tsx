@@ -20,9 +20,9 @@ const styles = StyleSheet.create({
   pill: {
     alignSelf: 'flex-start',
     borderRadius: 999,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#fff0e6',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#f3cdb7',
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
   },
