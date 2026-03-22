@@ -26,7 +26,6 @@ type PreparednessContextValue = {
   lastXpDelta: PreparednessXpDelta | null;
   addXp: (amount: number, reason: string) => void;
   updateModuleScore: (module: PreparednessModule, score: number, reason?: string) => void;
-  completeDailyAction: () => void;
 };
 
 const PreparednessContext = createContext<PreparednessContextValue | null>(null);
@@ -107,19 +106,14 @@ export function PreparednessProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const completeDailyAction = useCallback(() => {
-    addXp(20, 'daily_action');
-  }, [addXp]);
-
   const value = useMemo<PreparednessContextValue>(
     () => ({
       profile,
       lastXpDelta,
       addXp,
       updateModuleScore,
-      completeDailyAction,
     }),
-    [addXp, completeDailyAction, lastXpDelta, profile, updateModuleScore],
+    [addXp, lastXpDelta, profile, updateModuleScore],
   );
 
   return createElement(PreparednessContext.Provider, { value }, children);

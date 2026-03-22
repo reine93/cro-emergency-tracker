@@ -4,7 +4,7 @@ import { ApiRequestError } from '../api/client';
 import type { EarthquakeListItem } from '../types/earthquake';
 import { formatEventTimeCroatia, toEarthquakeListItem } from '../types/earthquake';
 import { getRecentEarthquakes } from '../api/earthquakes.api';
-import type { TranslateFn } from '../i18n';
+import type { AppLanguage, TranslateFn } from '../i18n';
 import { useI18n } from '../i18n';
 import {
   loadEarthquakesCache,
@@ -63,10 +63,12 @@ type UseRecentEarthquakesResult = {
 
 const DEFAULT_POLL_INTERVAL_MS = 10 * 60 * 1000;
 const DEV_POLL_INTERVAL_MS = 30 * 1000;
-let sessionLastSuccess: {
+type LastSuccessSnapshot = {
   items: EarthquakeListItem[];
   updatedAtIso: string;
-} | null = null;
+};
+
+let sessionLastSuccess: LastSuccessSnapshot | null = null;
 
 function getPollIntervalMs(): number {
   const fromEnv = Number(process.env.EXPO_PUBLIC_POLL_MS);
@@ -100,6 +102,24 @@ function toLocalizedFetchError(error: unknown, t: TranslateFn): string {
   return t('errors.generic');
 }
 
+function formatLastUpdated(updatedAtIso: string, language: AppLanguage, t: TranslateFn): string {
+  return formatEventTimeCroatia(updatedAtIso, language, t('common.unknownTime'));
+}
+
+function remapSnapshotItems(
+  snapshot: LastSuccessSnapshot,
+  language: AppLanguage,
+  t: TranslateFn,
+): EarthquakeListItem[] {
+  return snapshot.items.map((item) => toEarthquakeListItem(item.raw, { language, t }));
+}
+
+async function loadPersistentFallback(timeWindow: EarthquakeTimeWindow) {
+  const byWindow = await loadEarthquakesCache(timeWindow).catch(() => null);
+  if (byWindow) return byWindow;
+  return loadLatestEarthquakesCache().catch(() => null);
+}
+
 export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecentEarthquakesResult {
   const { language, t } = useI18n();
   const [items, setItems] = useState<EarthquakeListItem[]>([]);
@@ -111,13 +131,11 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
   const [dataSource, setDataSource] = useState<'live' | 'cache' | null>(null);
   const isFetchingRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const lastSuccessRef = useRef<{
-    items: EarthquakeListItem[];
-    updatedAtIso: string;
-  } | null>(null);
+  const lastSuccessRef = useRef<LastSuccessSnapshot | null>(null);
 
   const runFetch = useCallback(
     async (refreshing = false, silent = false) => {
+      // Avoid overlapping network/cache pipelines from polling + user refresh.
       if (isFetchingRef.current) return;
       isFetchingRef.current = true;
 
@@ -129,8 +147,45 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
       setError(null);
       setInfoMessage(null);
 
+      const applyLiveSuccess = async (liveItems: EarthquakeListItem[]) => {
+        setItems(liveItems);
+        setDataSource('live');
+        setInfoMessage(null);
+        const updatedAtIso = new Date().toISOString();
+        setLastUpdatedLabel(formatLastUpdated(updatedAtIso, language, t));
+        lastSuccessRef.current = { items: liveItems, updatedAtIso };
+        sessionLastSuccess = { items: liveItems, updatedAtIso };
+        await saveEarthquakesCache(
+          timeWindow,
+          liveItems.map((item) => item.raw),
+        );
+      };
+
+      const applyPersistentFallback = (fallback: {
+        events: Parameters<typeof toEarthquakeListItem>[0][];
+        updatedAtIso: string;
+      }) => {
+        const mapped = fallback.events.map((event) => toEarthquakeListItem(event, { language, t }));
+        setItems(mapped);
+        setDataSource('cache');
+        setLastUpdatedLabel(formatLastUpdated(fallback.updatedAtIso, language, t));
+        setInfoMessage(t('data.cachedFallback'));
+        setError(null);
+        lastSuccessRef.current = { items: mapped, updatedAtIso: fallback.updatedAtIso };
+        sessionLastSuccess = { items: mapped, updatedAtIso: fallback.updatedAtIso };
+      };
+
+      const applyMemoryFallback = (snapshot: LastSuccessSnapshot, messageKey: string) => {
+        const remapped = remapSnapshotItems(snapshot, language, t);
+        setItems(remapped);
+        setDataSource('cache');
+        setLastUpdatedLabel(formatLastUpdated(snapshot.updatedAtIso, language, t));
+        setInfoMessage(t(messageKey));
+        setError(null);
+      };
+
       try {
-        const data = await getRecentEarthquakes(
+        const liveItems = await getRecentEarthquakes(
           {
             hours: toHours(timeWindow),
             minMag: 2.5,
@@ -138,67 +193,16 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
           language,
           t,
         );
-        setItems(data);
-        setDataSource('live');
-        setInfoMessage(null);
-        const updatedAtIso = new Date().toISOString();
-        setLastUpdatedLabel(
-          formatEventTimeCroatia(updatedAtIso, language, t('common.unknownTime')),
-        );
-        lastSuccessRef.current = { items: data, updatedAtIso };
-        sessionLastSuccess = { items: data, updatedAtIso };
-        await saveEarthquakesCache(
-          timeWindow,
-          data.map((item) => item.raw),
-        );
+        await applyLiveSuccess(liveItems);
       } catch (fetchError) {
-        const byWindow = await loadEarthquakesCache(timeWindow).catch(() => null);
-        const latest = await loadLatestEarthquakesCache().catch(() => null);
-        const fallback = byWindow ?? latest;
+        const persistentFallback = await loadPersistentFallback(timeWindow);
 
-        if (fallback) {
-          const mapped = fallback.events.map((event) =>
-            toEarthquakeListItem(event, { language, t }),
-          );
-          setItems(mapped);
-          setDataSource('cache');
-          setLastUpdatedLabel(
-            formatEventTimeCroatia(fallback.updatedAtIso, language, t('common.unknownTime')),
-          );
-          setInfoMessage(t('data.cachedFallback'));
-          setError(null);
-          lastSuccessRef.current = { items: mapped, updatedAtIso: fallback.updatedAtIso };
-          sessionLastSuccess = { items: mapped, updatedAtIso: fallback.updatedAtIso };
+        if (persistentFallback) {
+          applyPersistentFallback(persistentFallback);
         } else if (lastSuccessRef.current) {
-          const remapped = lastSuccessRef.current.items.map((item) =>
-            toEarthquakeListItem(item.raw, { language, t }),
-          );
-          setItems(remapped);
-          setDataSource('cache');
-          setLastUpdatedLabel(
-            formatEventTimeCroatia(
-              lastSuccessRef.current.updatedAtIso,
-              language,
-              t('common.unknownTime'),
-            ),
-          );
-          setInfoMessage(t('data.memoryFallback'));
-          setError(null);
+          applyMemoryFallback(lastSuccessRef.current, 'data.memoryFallback');
         } else if (sessionLastSuccess) {
-          const remapped = sessionLastSuccess.items.map((item) =>
-            toEarthquakeListItem(item.raw, { language, t }),
-          );
-          setItems(remapped);
-          setDataSource('cache');
-          setLastUpdatedLabel(
-            formatEventTimeCroatia(
-              sessionLastSuccess.updatedAtIso,
-              language,
-              t('common.unknownTime'),
-            ),
-          );
-          setInfoMessage(t('data.sessionFallback'));
-          setError(null);
+          applyMemoryFallback(sessionLastSuccess, 'data.sessionFallback');
         } else {
           setError(toLocalizedFetchError(fetchError, t));
         }
@@ -227,6 +231,7 @@ export function useRecentEarthquakes(timeWindow: EarthquakeTimeWindow): UseRecen
 
   useEffect(() => {
     const interval = setInterval(() => {
+      // Only poll when app is active to avoid background noise/battery drain.
       if (appStateRef.current === 'active') {
         void runFetch(false, true);
       }

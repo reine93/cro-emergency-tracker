@@ -81,13 +81,13 @@ export function AppNavigator() {
     setState((prev) => ({ ...prev, selectedEarthquake: null }));
   };
 
-  const openTasks = () => {
+  const openTasks = (moduleIntent: NotificationModuleTarget | null = null) => {
     setState((prev) => ({
       ...prev,
       activeTab: 'Tasks',
       selectedEarthquake: null,
       settingsOpen: false,
-      taskModuleIntent: null,
+      taskModuleIntent: moduleIntent,
     }));
   };
 

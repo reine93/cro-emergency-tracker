@@ -8,6 +8,7 @@ import { useI18n } from '../i18n';
 import { ScreenScaffold } from './ScreenScaffold';
 import { theme } from '../theme/theme';
 import type { PreparednessBadge, PreparednessXpDelta } from '../gamification/preparedness.types';
+import type { NotificationModuleTarget } from '../hooks/useNotificationOrchestrator';
 
 const LEVEL_TITLES = [
   'Beginner',
@@ -22,7 +23,7 @@ function getLevelTitle(level: number): string {
 }
 
 type ProgressScreenProps = {
-  onOpenTasks: () => void;
+  onOpenTasks: (moduleIntent?: NotificationModuleTarget) => void;
   onOpenSettings: () => void;
 };
 
@@ -91,12 +92,16 @@ function isSameUtcDay(leftIso: string | null, rightIso: string): boolean {
 
 export function ProgressScreen({ onOpenTasks, onOpenSettings }: ProgressScreenProps) {
   const { t } = useI18n();
-  const { profile, lastXpDelta, completeDailyAction } = usePreparedness();
+  const { profile, lastXpDelta } = usePreparedness();
   const progressPct = Math.max(
     0,
     Math.min(100, Math.round((profile.currentLevelXp / profile.nextLevelXp) * 100)),
   );
   const dailyDone = isSameUtcDay(profile.lastActivityAt, new Date().toISOString());
+  const randomDailyChallengeModule = (): NotificationModuleTarget => {
+    const modules: NotificationModuleTarget[] = ['quiz', 'kit', 'home'];
+    return modules[Math.floor(Math.random() * modules.length)];
+  };
 
   const achievements = [
     ...(lastXpDelta ? [toAchievementFromDelta(lastXpDelta, t)] : []),
@@ -161,7 +166,7 @@ export function ProgressScreen({ onOpenTasks, onOpenSettings }: ProgressScreenPr
             label={
               dailyDone ? t('progress.dailyChallengeCompleted') : t('progress.dailyChallengeAction')
             }
-            onPress={completeDailyAction}
+            onPress={() => onOpenTasks(randomDailyChallengeModule())}
             disabled={dailyDone}
           />
         </Card>

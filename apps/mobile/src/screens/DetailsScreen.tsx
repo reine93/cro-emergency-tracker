@@ -17,7 +17,14 @@ type DetailsScreenProps = {
 export function DetailsScreen({ event, onBack }: DetailsScreenProps) {
   const { t, language } = useI18n();
   const localizedPlace = localizePlaceName(event.place, language);
-  const isOutsideCroatia = !localizedPlace.toUpperCase().includes('HRVATSKA');
+  const rawPlaceUpper = event.place.toUpperCase();
+  const localizedPlaceUpper = localizedPlace.toUpperCase();
+  const isCroatiaEvent =
+    rawPlaceUpper.includes('CROATIA') ||
+    rawPlaceUpper.includes('HRVATSKA') ||
+    localizedPlaceUpper.includes('CROATIA') ||
+    localizedPlaceUpper.includes('HRVATSKA');
+  const isOutsideCroatia = !isCroatiaEvent;
   const feltImpactHint =
     event.magnitude >= 4 ? t('details.feltImpactHigh') : t('details.feltImpactNormal');
 
